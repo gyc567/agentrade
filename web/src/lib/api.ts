@@ -8,7 +8,18 @@ import type {
   CompetitionData,
 } from '../types';
 
-const API_BASE = '/api';
+// 使用环境变量或默认值
+const getApiBase = () => {
+  // 开发环境使用相对路径，生产环境使用绝对路径
+  if (import.meta.env.DEV) {
+    return '/api'
+  }
+  // 生产环境使用环境变量
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+  return `${apiUrl}/api`
+}
+
+const API_BASE = getApiBase()
 
 export const api = {
   // 竞赛相关接口

@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "go build -o nofx ."
+
+[deploy]
+startCommand = "./nofx"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[environments.production]
+variables = { NOFX_BACKEND_PORT = "8080", NOFX_TIMEZONE = "Asia/Shanghai" }

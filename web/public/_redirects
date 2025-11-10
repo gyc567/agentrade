@@ -1,0 +1,4 @@
+# Vercel SPA重定向配置
+# 所有路由都重定向到index.html，支持前端路由
+
+/*    /index.html   200
