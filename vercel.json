@@ -14,20 +14,6 @@
     {
       "src": "/(.*)",
       "dest": "/web/$1"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "https://${
-        process.env.VITE_API_URL
-      }/api/$1"
     }
-  ],
-  "env": {
-    "VITE_API_URL": "@vite_api_url"
-  },
-  "build": {
-    "env": {
-      "VITE_API_URL": "@vite_api_url"
-    }
-  }
+  ]
 }
