@@ -39,10 +39,14 @@ localPort = 8080
 externalPort = 8080
 
 [[ports]]
-localPort = 45591
+localPort = 9999
+externalPort = 3001
+
+[[ports]]
+localPort = 46823
 externalPort = 3000
 
 [deployment]
 deploymentTarget = "vm"
 run = ["./nofx-backend"]
-build = ["go", "build", "-o", "nofx-backend", "main.go"]
+build = ["bash", "-c", "go build -o nofx-backend main.go"]
