@@ -35,8 +35,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 42809
+localPort = 35289
 externalPort = 3000
 
 [deployment]
-deploymentTarget = "cloudrun"
+deploymentTarget = "vm"
+run = ["./nofx-backend"]
+build = ["bash", "-c", "cd web && npm run build && cd .. && go build -o nofx-backend main.go"]

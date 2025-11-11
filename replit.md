@@ -10,6 +10,9 @@ NOFX is an AI-powered cryptocurrency trading system with support for multiple AI
 - ✅ Created unified workflow running both backend and frontend
 - ✅ Frontend runs on port 5000, backend API on port 8080
 - ✅ Admin mode enabled by default (no login required for testing)
+- ✅ **Deployment configured for Replit (Reserved VM)**
+- ✅ **Backend now serves built frontend for production**
+- ✅ **Health check endpoint at `/` for deployment**
 
 ## Architecture
 
@@ -22,9 +25,11 @@ NOFX is an AI-powered cryptocurrency trading system with support for multiple AI
   - WebSocket for real-time crypto market data
   - Support for Binance, Hyperliquid, Aster exchanges
   - AI integration with DeepSeek, Qwen, and custom APIs
+  - **Serves built frontend in production**
 
 ### Frontend (React + Vite)
-- **Port**: 5000 (exposed for Replit webview)
+- **Development Port**: 5000 (exposed for Replit webview)
+- **Production**: Served by backend from `web/dist`
 - **Location**: `web/` directory
 - **Package Manager**: npm
 - **Build Tool**: Vite 6.x
@@ -41,6 +46,7 @@ NOFX is an AI-powered cryptocurrency trading system with support for multiple AI
 ├── market/               # Market data handlers
 ├── web/                  # Frontend application
 │   ├── src/             # React source code
+│   ├── dist/            # Production build (generated)
 │   ├── package.json     # Frontend dependencies
 │   └── vite.config.ts   # Vite configuration
 └── prompts/             # AI prompt templates
@@ -48,11 +54,29 @@ NOFX is an AI-powered cryptocurrency trading system with support for multiple AI
 
 ## Running the Application
 
+### Development Mode
 The application uses a single workflow that starts both services:
-- Backend: `./nofx-backend` (pre-compiled Go binary)
-- Frontend: `cd web && npm run dev`
+- Backend: `./nofx-backend` (pre-compiled Go binary on port 8080)
+- Frontend: `cd web && npm run dev` (Vite dev server on port 5000)
 
 Both services start automatically via the `fullstack-app` workflow.
+
+### Production Deployment
+The deployment is configured for **Replit Reserved VM** with:
+- **Build Command**: Builds frontend and compiles backend
+  ```bash
+  cd web && npm run build && cd .. && go build -o nofx-backend main.go
+  ```
+- **Run Command**: Starts the backend (which serves the frontend)
+  ```bash
+  ./nofx-backend
+  ```
+
+The backend serves the built frontend from `web/dist` and provides:
+- **Health Check**: `GET /` returns `{"status":"ok","service":"NOFX AI Trading System"}`
+- **API Endpoints**: All API routes under `/api/*`
+- **Static Assets**: Frontend assets served from `/assets/*`
+- **SPA Routing**: Non-API routes serve `index.html` for client-side routing
 
 ## Configuration
 
@@ -77,6 +101,12 @@ If you modify the Go code, rebuild the backend:
 go build -o nofx-backend main.go
 ```
 
+### Rebuilding the Frontend
+To rebuild the production frontend:
+```bash
+cd web && npm run build
+```
+
 ### Installing Dependencies
 - **Frontend**: `cd web && npm install`
 - **Backend**: `go mod download`
@@ -88,6 +118,24 @@ The SQLite database (`config.db`) is created automatically on first run. It stor
 - AI model settings
 - Exchange credentials
 - Trading history
+
+## Deployment to Replit
+
+The deployment configuration is already set up. To deploy:
+1. Click the **Publish** button in Replit
+2. Select **Reserved VM** deployment type
+3. Review the configuration (already configured)
+4. Click **Publish**
+
+The deployment will:
+1. Build the frontend (`npm run build`)
+2. Compile the backend (`go build`)
+3. Start the backend binary which serves both API and frontend
+
+### Deployment Health Checks
+- **Endpoint**: `GET /`
+- **Response**: `{"status":"ok","service":"NOFX AI Trading System"}`
+- **Timeout**: Default Replit timeout settings
 
 ## Security Notes
 - Admin mode is enabled for easy testing (bypasses authentication)
@@ -109,9 +157,14 @@ The SQLite database (`config.db`) is created automatically on first run. It stor
 - Rebuild if needed: `go build -o nofx-backend main.go`
 - Check logs in the workflow console
 
-### Frontend proxy errors
-- Ensure backend is running on port 8080
-- Check Vite config proxy settings in `web/vite.config.ts`
+### Frontend not displaying in production
+- Ensure frontend is built: `ls web/dist/index.html`
+- Rebuild if needed: `cd web && npm run build`
+- Check backend logs for static file serving errors
+
+### Deployment health check failing
+- Verify root endpoint responds: `curl http://localhost:8080/`
+- Should return: `{"status":"ok","service":"NOFX AI Trading System"}`
 
 ### Database issues
 - Delete `config.db` to reset (will lose all data)
