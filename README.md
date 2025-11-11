@@ -14,6 +14,24 @@
 
 ---
 
+## 🚨 DEPLOYING TO REPLIT? READ THIS FIRST!
+
+### Critical: Manual Deployment Type Selection Required
+
+When deploying to Replit:
+
+1. Click **"Publish"**
+2. **MANUALLY SELECT "RESERVED VM"** in the deployment dialog (NOT Autoscale/Cloud Run)
+3. Click **"Deploy"**
+
+**Why?** Replit's UI overrides the `.replit` configuration. You **must** manually select "Reserved VM" for WebSocket and background worker support.
+
+📖 **Detailed instructions**: See `DEPLOY_NOW.md`
+
+✅ **Your code is ready** - just select the correct deployment type in the UI!
+
+---
+
 ## 📑 Table of Contents
 
 - [🚀 Universal AI Trading Operating System](#-universal-ai-trading-operating-system)
