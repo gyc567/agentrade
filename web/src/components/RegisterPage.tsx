@@ -110,7 +110,7 @@ export function RegisterPage() {
           {/* Logo */}
           <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <img src="/icons/nofx.svg" alt="NoFx Logo" className="w-16 h-16 object-contain" />
+            <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="text-2xl font-bold" style={{ color: '#EAECEF' }}>
             {t('appTitle', language)}

@@ -134,7 +134,7 @@ export default function HeroSection({ language }: HeroSectionProps) {
             {/* Background Layer */}
             <motion.img 
               src='/images/hand-bg.png' 
-              alt='NOFX Platform Background' 
+              alt='Monnaire Trading Agent OS Platform Background' 
               className='w-full opacity-90'
               style={{ opacity, scale }}
               whileHover={{ scale: 1.02 }}

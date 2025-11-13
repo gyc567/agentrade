@@ -72,10 +72,10 @@ export function LoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <img src="/icons/nofx.svg" alt="NoFx Logo" className="w-16 h-16 object-contain" />
+              <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--brand-light-gray)' }}>
-              登录 NOFX
+              登录 Monnaire Trading Agent OS
             </h1>
             <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
               {step === 'login' ? '请输入您的邮箱和密码' : '请输入两步验证码'}
@@ -130,6 +130,20 @@ export function LoginPage() {
               >
                 {loading ? t('loading', language) : t('loginButton', language)}
               </button>
+
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.history.pushState({}, '', '/reset-password');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                  className="text-sm hover:underline transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  忘记密码？
+                </button>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleOTPVerify} className="space-y-4">

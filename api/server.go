@@ -101,6 +101,10 @@ func (s *Server) setupRoutes() {
                 api.POST("/verify-otp", s.handleVerifyOTP)
                 api.POST("/complete-registration", s.handleCompleteRegistration)
 
+                // 密码重置路由（无需认证）
+                api.POST("/request-password-reset", s.handleRequestPasswordReset)
+                api.POST("/reset-password", s.handleResetPassword)
+
                 // 系统支持的模型和交易所（无需认证）
                 api.GET("/supported-models", s.handleGetSupportedModels)
                 api.GET("/supported-exchanges", s.handleGetSupportedExchanges)
@@ -1276,11 +1280,14 @@ func (s *Server) handleRegister(c *gin.Context) {
         // 创建用户（未验证OTP状态）
         userID := uuid.New().String()
         user := &config.User{
-                ID:           userID,
-                Email:        req.Email,
-                PasswordHash: passwordHash,
-                OTPSecret:    otpSecret,
-                OTPVerified:  false,
+                ID:             userID,
+                Email:          req.Email,
+                PasswordHash:   passwordHash,
+                OTPSecret:      otpSecret,
+                OTPVerified:    false,
+                IsActive:       true,  // 新增：账户激活状态
+                IsAdmin:        false, // 新增：非管理员
+                FailedAttempts: 0,     // 新增：失败尝试次数
         }
 
         err = s.database.CreateUser(user)
@@ -1757,5 +1764,151 @@ func (s *Server) handleGetPublicTraderConfig(c *gin.Context) {
         }
 
         c.JSON(http.StatusOK, result)
+}
+
+// handleRequestPasswordReset 处理密码重置请求
+func (s *Server) handleRequestPasswordReset(c *gin.Context) {
+        var req struct {
+                Email string `json:"email" binding:"required,email"`
+        }
+
+        if err := c.ShouldBindJSON(&req); err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }
+
+        // 检查用户是否存在
+        user, err := s.database.GetUserByEmail(req.Email)
+        if err != nil {
+                // 即使用户不存在，也返回成功，防止邮箱枚举攻击
+                c.JSON(http.StatusOK, gin.H{
+                        "message": "如果该邮箱已注册，您将收到密码重置邮件",
+                })
+                return
+        }
+
+        // 检查IP频率限制
+        ipAddress := auth.ExtractIPFromRequest(map[string]string{
+                "X-Forwarded-For": c.GetHeader("X-Forwarded-For"),
+                "X-Real-IP":       c.GetHeader("X-Real-IP"),
+        })
+
+        failedAttempts, err := s.database.GetLoginAttemptsByIP(ipAddress)
+        if err != nil {
+                log.Printf("获取IP登录尝试次数失败: %v", err)
+        }
+
+        // 检查邮箱频率限制
+        emailAttempts, err := s.database.GetLoginAttemptsByEmail(req.Email)
+        if err != nil {
+                log.Printf("获取邮箱登录尝试次数失败: %v", err)
+        }
+
+        // 频率限制：每IP每小时最多3次，每邮箱每小时最多3次
+        if failedAttempts >= 3 || emailAttempts >= 3 {
+                c.JSON(http.StatusTooManyRequests, gin.H{
+                        "error": "请求过于频繁，请稍后再试",
+                })
+                return
+        }
+
+        // 生成密码重置令牌
+        token, err := auth.GeneratePasswordResetToken()
+        if err != nil {
+                log.Printf("生成密码重置令牌失败: %v", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "生成重置令牌失败"})
+                return
+        }
+
+        tokenHash := auth.HashPasswordResetToken(token)
+        expiresAt := time.Now().Add(1 * time.Hour)
+
+        // 存储令牌
+        err = s.database.CreatePasswordResetToken(user.ID, token, tokenHash, expiresAt)
+        if err != nil {
+                log.Printf("存储密码重置令牌失败: %v", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "创建重置令牌失败"})
+                return
+        }
+
+        // TODO: 发送邮件（这里先只记录日志）
+        resetLink := fmt.Sprintf("https://your-frontend-domain.com/reset-password?token=%s", token)
+        log.Printf("📧 密码重置邮件 - 收件人: %s, 重置链接: %s", req.Email, resetLink)
+
+        c.JSON(http.StatusOK, gin.H{
+                "message": "如果该邮箱已注册，您将收到密码重置邮件",
+        })
+}
+
+// handleResetPassword 处理密码重置确认
+func (s *Server) handleResetPassword(c *gin.Context) {
+        var req struct {
+                Token    string `json:"token" binding:"required"`
+                Password string `json:"password" binding:"required,min=8"`
+                OTPCode  string `json:"otp_code" binding:"required"`
+        }
+
+        if err := c.ShouldBindJSON(&req); err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }
+
+        // 验证令牌
+        tokenHash := auth.HashPasswordResetToken(req.Token)
+        userID, err := s.database.ValidatePasswordResetToken(tokenHash)
+        if err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": "重置链接无效或已过期"})
+                return
+        }
+
+        // 获取用户信息
+        user, err := s.database.GetUserByID(*userID)
+        if err != nil {
+                c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+                return
+        }
+
+        // 验证OTP
+        if !auth.VerifyOTP(user.OTPSecret, req.OTPCode) {
+                c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误"})
+                return
+        }
+
+        // 生成新密码哈希
+        newPasswordHash, err := auth.HashPassword(req.Password)
+        if err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }
+
+        // 更新密码
+        err = s.database.UpdateUserPassword(user.ID, newPasswordHash)
+        if err != nil {
+                log.Printf("更新用户密码失败: %v", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "更新密码失败"})
+                return
+        }
+
+        // 标记令牌为已使用
+        err = s.database.MarkPasswordResetTokenAsUsed(tokenHash)
+        if err != nil {
+                log.Printf("标记令牌为已使用失败: %v", err)
+        }
+
+        // 使用户的所有其他令牌失效
+        err = s.database.InvalidateAllPasswordResetTokens(user.ID)
+        if err != nil {
+                log.Printf("使其他令牌失效失败: %v", err)
+        }
+
+        // 重置失败尝试次数
+        err = s.database.ResetUserFailedAttempts(user.ID)
+        if err != nil {
+                log.Printf("重置用户失败尝试次数失败: %v", err)
+        }
+
+        c.JSON(http.StatusOK, gin.H{
+                "message": "密码重置成功，请使用新密码登录",
+        })
 }
 

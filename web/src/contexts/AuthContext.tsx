@@ -13,6 +13,8 @@ interface AuthContextType {
   register: (email: string, password: string, betaCode?: string) => Promise<{ success: boolean; message?: string; userID?: string; otpSecret?: string; qrCodeURL?: string }>;
   verifyOTP: (userID: string, otpCode: string) => Promise<{ success: boolean; message?: string }>;
   completeRegistration: (userID: string, otpCode: string) => Promise<{ success: boolean; message?: string }>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>;
+  resetPassword: (token: string, password: string, otpCode: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -174,17 +176,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userInfo);
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_user', JSON.stringify(userInfo));
-        
+
         // 跳转到首页
         window.history.pushState({}, '', '/');
         window.dispatchEvent(new PopStateEvent('popstate'));
-        
+
         return { success: true, message: data.message };
       } else {
         return { success: false, message: data.error };
       }
     } catch (error) {
       return { success: false, message: '注册完成失败，请重试' };
+    }
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    try {
+      const response = await fetch('/api/request-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.error };
+      }
+    } catch (error) {
+      return { success: false, message: '请求失败，请重试' };
+    }
+  };
+
+  const resetPassword = async (token: string, password: string, otpCode: string) => {
+    try {
+      const response = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, password, otp_code: otpCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.error };
+      }
+    } catch (error) {
+      return { success: false, message: '密码重置失败，请重试' };
     }
   };
 
@@ -204,6 +250,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         verifyOTP,
         completeRegistration,
+        requestPasswordReset,
+        resetPassword,
         logout,
         isLoading,
       }}

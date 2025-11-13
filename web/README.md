@@ -1,4 +1,4 @@
-# NOFX Web Dashboard
+# Monnaire Trading Agent OS
 
 基于 Vite + React + TypeScript 的AI自动交易监控面板
 

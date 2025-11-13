@@ -20,7 +20,7 @@ const getApiBase = () => {
     return '/api'
   }
   // 生产环境使用环境变量
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://nofx-gyc567.replit.app'
   return `${apiUrl}/api`
 }
 

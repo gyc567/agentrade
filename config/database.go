@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -118,8 +119,50 @@ func (d *Database) createTables() error {
 			password_hash TEXT NOT NULL,
 			otp_secret TEXT,
 			otp_verified BOOLEAN DEFAULT 0,
+			locked_until DATETIME,
+			failed_attempts INTEGER DEFAULT 0,
+			last_failed_at DATETIME,
+			is_active BOOLEAN DEFAULT 1,
+			is_admin BOOLEAN DEFAULT 0,
+			beta_code TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// 密码重置令牌表
+		`CREATE TABLE IF NOT EXISTS password_resets (
+			id TEXT PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			token_hash TEXT NOT NULL,
+			expires_at DATETIME NOT NULL,
+			used_at DATETIME,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+
+		// 登录尝试记录表
+		`CREATE TABLE IF NOT EXISTS login_attempts (
+			id TEXT PRIMARY KEY,
+			user_id TEXT,
+			email TEXT NOT NULL,
+			ip_address TEXT NOT NULL,
+			success BOOLEAN NOT NULL,
+			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+			user_agent TEXT,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+		)`,
+
+		// 审计日志表
+		`CREATE TABLE IF NOT EXISTS audit_logs (
+			id TEXT PRIMARY KEY,
+			user_id TEXT,
+			action TEXT NOT NULL,
+			ip_address TEXT NOT NULL,
+			user_agent TEXT,
+			success BOOLEAN NOT NULL,
+			details TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 		)`,
 
 		// 系统配置表
@@ -175,6 +218,38 @@ func (d *Database) createTables() error {
 				UPDATE system_config SET updated_at = CURRENT_TIMESTAMP WHERE key = NEW.key;
 			END`,
 	}
+
+	// 创建索引
+	indexQueries := []string{
+		// 用户表索引
+		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+		`CREATE INDEX IF NOT EXISTS idx_users_locked_until ON users(locked_until)`,
+		`CREATE INDEX IF NOT EXISTS idx_users_failed_attempts ON users(failed_attempts)`,
+
+		// 密码重置表索引
+		`CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id, used_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token_hash)`,
+		`CREATE INDEX IF NOT EXISTS idx_password_resets_expires ON password_resets(expires_at)`,
+
+		// 登录尝试表索引
+		`CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip_address, timestamp)`,
+		`CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts(email, timestamp)`,
+		`CREATE INDEX IF NOT EXISTS idx_login_attempts_user_id ON login_attempts(user_id)`,
+
+		// 审计日志表索引
+		`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`,
+	}
+
+	for _, query := range indexQueries {
+		if _, err := d.db.Exec(query); err != nil {
+			log.Printf("⚠️ 创建索引失败 [%s]: %v", query, err)
+		}
+	}
+
+	return nil
+}
 
 	for _, query := range queries {
 		if _, err := d.db.Exec(query); err != nil {
@@ -368,13 +443,19 @@ func (d *Database) migrateExchangesTable() error {
 
 // User 用户配置
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"` // 不返回到前端
-	OTPSecret    string    `json:"-"` // 不返回到前端
-	OTPVerified  bool      `json:"otp_verified"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID             string     `json:"id"`
+	Email          string     `json:"email"`
+	PasswordHash   string     `json:"-"` // 不返回到前端
+	OTPSecret      string     `json:"-"` // 不返回到前端
+	OTPVerified    bool       `json:"otp_verified"`
+	LockedUntil    *time.Time `json:"-"` // 账户锁定到期时间，不返回前端
+	FailedAttempts int        `json:"-"` // 失败尝试次数，不返回前端
+	LastFailedAt   *time.Time `json:"-"` // 最后失败时间，不返回前端
+	IsActive       bool       `json:"is_active"`
+	IsAdmin        bool       `json:"is_admin"`
+	BetaCode       string     `json:"-"` // 内测码，不返回前端
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 // AIModelConfig AI模型配置
@@ -457,9 +538,11 @@ func GenerateOTPSecret() (string, error) {
 // CreateUser 创建用户
 func (d *Database) CreateUser(user *User) error {
 	_, err := d.db.Exec(`
-		INSERT INTO users (id, email, password_hash, otp_secret, otp_verified)
-		VALUES (?, ?, ?, ?, ?)
-	`, user.ID, user.Email, user.PasswordHash, user.OTPSecret, user.OTPVerified)
+		INSERT INTO users (id, email, password_hash, otp_secret, otp_verified,
+		                   is_active, is_admin, beta_code)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, user.ID, user.Email, user.PasswordHash, user.OTPSecret, user.OTPVerified,
+		user.IsActive, user.IsAdmin, user.BetaCode)
 	return err
 }
 
@@ -492,15 +575,27 @@ func (d *Database) EnsureAdminUser() error {
 // GetUserByEmail 通过邮箱获取用户
 func (d *Database) GetUserByEmail(email string) (*User, error) {
 	var user User
+	var lockedUntil, lastFailedAt sql.NullTime
 	err := d.db.QueryRow(`
-		SELECT id, email, password_hash, otp_secret, otp_verified, created_at, updated_at
+		SELECT id, email, password_hash, otp_secret, otp_verified,
+		       locked_until, failed_attempts, last_failed_at,
+		       is_active, is_admin, beta_code,
+		       created_at, updated_at
 		FROM users WHERE email = ?
 	`, email).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret,
-		&user.OTPVerified, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret, &user.OTPVerified,
+		&lockedUntil, &user.FailedAttempts, &lastFailedAt,
+		&user.IsActive, &user.IsAdmin, &user.BetaCode,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if lockedUntil.Valid {
+		user.LockedUntil = &lockedUntil.Time
+	}
+	if lastFailedAt.Valid {
+		user.LastFailedAt = &lastFailedAt.Time
 	}
 	return &user, nil
 }
@@ -508,15 +603,27 @@ func (d *Database) GetUserByEmail(email string) (*User, error) {
 // GetUserByID 通过ID获取用户
 func (d *Database) GetUserByID(userID string) (*User, error) {
 	var user User
+	var lockedUntil, lastFailedAt sql.NullTime
 	err := d.db.QueryRow(`
-		SELECT id, email, password_hash, otp_secret, otp_verified, created_at, updated_at
+		SELECT id, email, password_hash, otp_secret, otp_verified,
+		       locked_until, failed_attempts, last_failed_at,
+		       is_active, is_admin, beta_code,
+		       created_at, updated_at
 		FROM users WHERE id = ?
 	`, userID).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret,
-		&user.OTPVerified, &user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret, &user.OTPVerified,
+		&lockedUntil, &user.FailedAttempts, &lastFailedAt,
+		&user.IsActive, &user.IsAdmin, &user.BetaCode,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if lockedUntil.Valid {
+		user.LockedUntil = &lockedUntil.Time
+	}
+	if lastFailedAt.Valid {
+		user.LastFailedAt = &lastFailedAt.Time
 	}
 	return &user, nil
 }
@@ -1081,4 +1188,149 @@ func (d *Database) GetBetaCodeStats() (total, used int, err error) {
 	}
 
 	return total, used, nil
+}
+
+// UpdateUserPassword 更新用户密码
+func (d *Database) UpdateUserPassword(userID, newPasswordHash string) error {
+	_, err := d.db.Exec(`
+		UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, newPasswordHash, userID)
+	return err
+}
+
+// UpdateUserLockoutStatus 更新用户锁定状态
+func (d *Database) UpdateUserLockoutStatus(userID string, failedAttempts int, lockedUntil *time.Time) error {
+	_, err := d.db.Exec(`
+		UPDATE users SET failed_attempts = ?, locked_until = ?, last_failed_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, failedAttempts, lockedUntil, userID)
+	return err
+}
+
+// ResetUserFailedAttempts 重置用户失败尝试次数
+func (d *Database) ResetUserFailedAttempts(userID string) error {
+	_, err := d.db.Exec(`
+		UPDATE users SET failed_attempts = 0, locked_until = NULL, last_failed_at = NULL
+		WHERE id = ?
+	`, userID)
+	return err
+}
+
+// RecordLoginAttempt 记录登录尝试
+func (d *Database) RecordLoginAttempt(userID *string, email, ipAddress, userAgent string, success bool) error {
+	_, err := d.db.Exec(`
+		INSERT INTO login_attempts (id, user_id, email, ip_address, success, user_agent)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, GenerateUUID(), userID, email, ipAddress, success, userAgent)
+	return err
+}
+
+// GetLoginAttemptsByIP 获取IP在过去15分钟内的失败尝试次数
+func (d *Database) GetLoginAttemptsByIP(ipAddress string) (int, error) {
+	var count int
+	err := d.db.QueryRow(`
+		SELECT COUNT(*) FROM login_attempts
+		WHERE ip_address = ? AND success = 0 AND timestamp > datetime('now', '-15 minutes')
+	`, ipAddress).Scan(&count)
+	return count, err
+}
+
+// GetLoginAttemptsByEmail 获取邮箱在过去15分钟内的失败尝试次数
+func (d *Database) GetLoginAttemptsByEmail(email string) (int, error) {
+	var count int
+	err := d.db.QueryRow(`
+		SELECT COUNT(*) FROM login_attempts
+		WHERE email = ? AND success = 0 AND timestamp > datetime('now', '-15 minutes')
+	`, email).Scan(&count)
+	return count, err
+}
+
+// CreatePasswordResetToken 创建密码重置令牌
+func (d *Database) CreatePasswordResetToken(userID, token, tokenHash string, expiresAt time.Time) error {
+	_, err := d.db.Exec(`
+		INSERT INTO password_resets (id, user_id, token_hash, expires_at)
+		VALUES (?, ?, ?, ?)
+	`, token, userID, tokenHash, expiresAt)
+	return err
+}
+
+// ValidatePasswordResetToken 验证密码重置令牌
+func (d *Database) ValidatePasswordResetToken(tokenHash string) (*string, error) {
+	var userID string
+	var expiresAt time.Time
+	err := d.db.QueryRow(`
+		SELECT user_id, expires_at FROM password_resets
+		WHERE token_hash = ? AND used_at IS NULL AND expires_at > CURRENT_TIMESTAMP
+	`, tokenHash).Scan(&userID, &expiresAt)
+	if err != nil {
+		return nil, err
+	}
+	return &userID, nil
+}
+
+// MarkPasswordResetTokenAsUsed 标记密码重置令牌为已使用
+func (d *Database) MarkPasswordResetTokenAsUsed(tokenHash string) error {
+	_, err := d.db.Exec(`
+		UPDATE password_resets SET used_at = CURRENT_TIMESTAMP
+		WHERE token_hash = ?
+	`, tokenHash)
+	return err
+}
+
+// InvalidateAllPasswordResetTokens 使用户的所有密码重置令牌失效
+func (d *Database) InvalidateAllPasswordResetTokens(userID string) error {
+	_, err := d.db.Exec(`
+		UPDATE password_resets SET used_at = CURRENT_TIMESTAMP
+		WHERE user_id = ? AND used_at IS NULL
+	`, userID)
+	return err
+}
+
+// CreateAuditLog 创建审计日志
+func (d *Database) CreateAuditLog(userID *string, action, ipAddress, userAgent string, success bool, details string) error {
+	_, err := d.db.Exec(`
+		INSERT INTO audit_logs (id, user_id, action, ip_address, user_agent, success, details)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, GenerateUUID(), userID, action, ipAddress, userAgent, success, details)
+	return err
+}
+
+// GetAuditLogs 获取用户的审计日志
+func (d *Database) GetAuditLogs(userID string, limit int) ([]map[string]interface{}, error) {
+	rows, err := d.db.Query(`
+		SELECT action, ip_address, success, details, created_at
+		FROM audit_logs
+		WHERE user_id = ?
+		ORDER BY created_at DESC
+		LIMIT ?
+	`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var logs []map[string]interface{}
+	for rows.Next() {
+		var action, ipAddress, details, createdAt string
+		var success bool
+		if err := rows.Scan(&action, &ipAddress, &success, &details, &createdAt); err != nil {
+			return nil, err
+		}
+		log := map[string]interface{}{
+			"action":      action,
+			"ip_address":  ipAddress,
+			"success":     success,
+			"details":     details,
+			"created_at":  createdAt,
+		}
+		logs = append(logs, log)
+	}
+
+	return logs, nil
+}
+
+// GenerateUUID 生成UUID
+func GenerateUUID() string {
+	return strings.Replace(uuid.New().String(), "-", "", -1)
 }

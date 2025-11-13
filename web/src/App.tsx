@@ -5,6 +5,7 @@ import { EquityChart } from './components/EquityChart';
 import { AITradersPage } from './components/AITradersPage';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { CompetitionPage } from './components/CompetitionPage';
 import { LandingPage } from './pages/LandingPage';
 import HeaderBar from './components/landing/HeaderBar';
@@ -199,7 +200,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0E11' }}>
         <div className="text-center">
-          <img src="/icons/nofx.svg" alt="NoFx Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+          <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
           <p style={{ color: '#EAECEF' }}>{t('loading', language)}</p>
         </div>
       </div>
@@ -212,6 +213,9 @@ function App() {
   }
   if (route === '/register') {
     return <RegisterPage />;
+  }
+  if (route === '/reset-password') {
+    return <ResetPasswordPage />;
   }
   if (route === '/competition') {
     return (
