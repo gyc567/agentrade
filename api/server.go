@@ -1226,12 +1226,27 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 func (s *Server) handleRegister(c *gin.Context) {
         var req struct {
                 Email    string `json:"email" binding:"required,email"`
-                Password string `json:"password" binding:"required,min=6"`
+                Password string `json:"password" binding:"required,min=8"`
                 BetaCode string `json:"beta_code"`
         }
 
+        // 验证请求数据
         if err := c.ShouldBindJSON(&req); err != nil {
-                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "success": false,
+                        "error":   "请求数据格式错误",
+                        "details": "请确保邮箱格式正确，密码长度不少于8位",
+                })
+                return
+        }
+
+        // 验证密码强度
+        if len(req.Password) < 8 {
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "success": false,
+                        "error":   "密码强度不够",
+                        "details": "密码必须至少包含8个字符",
+                })
                 return
         }
 
@@ -1240,18 +1255,30 @@ func (s *Server) handleRegister(c *gin.Context) {
         if betaModeStr == "true" {
                 // 内测模式下必须提供有效的内测码
                 if req.BetaCode == "" {
-                        c.JSON(http.StatusBadRequest, gin.H{"error": "内测期间，注册需要提供内测码"})
+                        c.JSON(http.StatusBadRequest, gin.H{
+                                "success": false,
+                                "error":   "内测码不能为空",
+                                "details": "当前为内测期间，注册需要提供有效的内测码",
+                        })
                         return
                 }
 
                 // 验证内测码
                 isValid, err := s.database.ValidateBetaCode(req.BetaCode)
                 if err != nil {
-                        c.JSON(http.StatusInternalServerError, gin.H{"error": "验证内测码失败"})
+                        c.JSON(http.StatusInternalServerError, gin.H{
+                                "success": false,
+                                "error":   "内测码验证失败",
+                                "details": "服务器内部错误，请稍后重试",
+                        })
                         return
                 }
                 if !isValid {
-                        c.JSON(http.StatusBadRequest, gin.H{"error": "内测码无效或已被使用"})
+                        c.JSON(http.StatusBadRequest, gin.H{
+                                "success": false,
+                                "error":   "内测码无效",
+                                "details": "内测码无效或已被使用，请检查后重试",
+                        })
                         return
                 }
         }
@@ -1259,40 +1286,55 @@ func (s *Server) handleRegister(c *gin.Context) {
         // 检查邮箱是否已存在
         _, err := s.database.GetUserByEmail(req.Email)
         if err == nil {
-                c.JSON(http.StatusConflict, gin.H{"error": "邮箱已被注册"})
+                c.JSON(http.StatusConflict, gin.H{
+                        "success": false,
+                        "error":   "邮箱已被注册",
+                        "details": "该邮箱地址已经注册，请使用其他邮箱或尝试登录",
+                })
                 return
         }
 
         // 生成密码哈希
         passwordHash, err := auth.HashPassword(req.Password)
         if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "密码处理失败"})
+                c.JSON(http.StatusInternalServerError, gin.H{
+                        "success": false,
+                        "error":   "密码处理失败",
+                        "details": "服务器内部错误，请稍后重试",
+                })
                 return
         }
 
-        // 生成OTP密钥
-        otpSecret, err := auth.GenerateOTPSecret()
-        if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "OTP密钥生成失败"})
+        // 验证密码强度
+        if len(req.Password) < 8 {
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "success": false,
+                        "error":   "密码强度不够",
+                        "details": "密码必须至少包含8个字符",
+                })
                 return
         }
 
-        // 创建用户（未验证OTP状态）
+        // 创建用户（直接激活，无需OTP验证）
         userID := uuid.New().String()
         user := &config.User{
                 ID:             userID,
                 Email:          req.Email,
                 PasswordHash:   passwordHash,
-                OTPSecret:      otpSecret,
-                OTPVerified:    false,
-                IsActive:       true,  // 新增：账户激活状态
-                IsAdmin:        false, // 新增：非管理员
-                FailedAttempts: 0,     // 新增：失败尝试次数
+                OTPSecret:      "",        // 移除OTP密钥
+                OTPVerified:    true,      // 直接标记为已验证
+                IsActive:       true,      // 账户激活状态
+                IsAdmin:        false,     // 非管理员
+                FailedAttempts: 0,         // 失败尝试次数
         }
 
         err = s.database.CreateUser(user)
         if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "创建用户失败: " + err.Error()})
+                c.JSON(http.StatusInternalServerError, gin.H{
+                        "success": false,
+                        "error":   "创建用户失败",
+                        "details": "服务器内部错误，请稍后重试",
+                })
                 return
         }
 
@@ -1308,14 +1350,26 @@ func (s *Server) handleRegister(c *gin.Context) {
                 }
         }
 
-        // 返回OTP设置信息
-        qrCodeURL := auth.GetOTPQRCodeURL(otpSecret, req.Email)
+        // 生成JWT令牌
+        token, err := auth.GenerateToken(userID, req.Email, false)
+        if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{
+                        "success": false,
+                        "error":   "令牌生成失败",
+                        "details": "服务器内部错误，请稍后重试",
+                })
+                return
+        }
+
+        // 返回成功信息
         c.JSON(http.StatusOK, gin.H{
-                "user_id":     userID,
-                "email":       req.Email,
-                "otp_secret":  otpSecret,
-                "qr_code_url": qrCodeURL,
-                "message":     "请使用Google Authenticator扫描二维码并验证OTP",
+                "success": true,
+                "message": "注册成功，欢迎加入Monnaire Trading Agent OS！",
+                "token":   token,
+                "user": gin.H{
+                        "id":    userID,
+                        "email": req.Email,
+                },
         })
 }
 

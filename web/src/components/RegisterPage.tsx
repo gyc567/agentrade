@@ -7,18 +7,14 @@ import HeaderBar from './landing/HeaderBar';
 
 export function RegisterPage() {
   const { language } = useLanguage();
-  const { register, completeRegistration } = useAuth();
-  const [step, setStep] = useState<'register' | 'setup-otp' | 'verify-otp'>('register');
+  const { register } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [betaCode, setBetaCode] = useState('');
   const [betaMode, setBetaMode] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [userID, setUserID] = useState('');
-  const [otpSecret, setOtpSecret] = useState('');
-  const [qrCodeURL, setQrCodeURL] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,60 +29,59 @@ export function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
+    // 前端验证
     if (password !== confirmPassword) {
-      setError(t('passwordMismatch', language));
+      setError('两次输入的密码不一致，请检查后重试');
       return;
     }
 
-    if (password.length < 6) {
-      setError(t('passwordTooShort', language));
+    if (password.length < 8) {
+      setError('密码长度至少需要8个字符');
       return;
     }
 
     if (betaMode && !betaCode.trim()) {
-      setError('内测期间，注册需要提供内测码');
+      setError('内测期间，注册需要提供有效的内测码');
       return;
     }
 
     setLoading(true);
 
-    const result = await register(email, password, betaCode.trim() || undefined);
-    
-    if (result.success && result.userID) {
-      setUserID(result.userID);
-      setOtpSecret(result.otpSecret || '');
-      setQrCodeURL(result.qrCodeURL || '');
-      setStep('setup-otp');
-    } else {
-      setError(result.message || t('registrationFailed', language));
+    try {
+      const result = await register(email, password, betaCode.trim() || undefined);
+
+      if (result.success) {
+        // 注册成功
+        setSuccess(result.message || '注册成功！即将跳转到应用...');
+        // 2秒后跳转到主页
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        // 注册失败，显示详细错误信息
+        const errorMsg = (result as any).details || result.message || '注册失败，请检查输入信息后重试';
+        setError(errorMsg);
+      }
+    } catch (err) {
+      setError('网络错误，请检查网络连接后重试');
     }
-    
+
     setLoading(false);
   };
 
-  const handleSetupComplete = () => {
-    setStep('verify-otp');
+  const getPasswordStrength = (password: string) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
   };
 
-  const handleOTPVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    const result = await completeRegistration(userID, otpCode);
-    
-    if (!result.success) {
-      setError(result.message || t('registrationFailed', language));
-    }
-    // 成功的话AuthContext会自动处理登录状态
-    
-    setLoading(false);
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  const passwordStrength = getPasswordStrength(password);
+  const strengthColors = ['#FF5252', '#FF9800', '#FFC107', '#4CAF50', '#2E7D32'];
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--brand-black)' }}>
@@ -116,249 +111,182 @@ export function RegisterPage() {
             {t('appTitle', language)}
           </h1>
           <p className="text-sm mt-2" style={{ color: '#848E9C' }}>
-            {step === 'register' && t('registerTitle', language)}
-            {step === 'setup-otp' && t('setupTwoFactor', language)}
-            {step === 'verify-otp' && t('verifyOTP', language)}
+            创建您的账户
           </p>
         </div>
 
         {/* Registration Form */}
         <div className="rounded-lg p-6" style={{ background: 'var(--panel-bg)', border: '1px solid var(--panel-border)' }}>
-          {step === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                  {t('email', language)}
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded"
-                  style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
-                  placeholder={t('emailPlaceholder', language)}
-                  required
-                />
-              </div>
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
+                邮箱地址
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 rounded"
+                style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
+                placeholder="请输入您的邮箱"
+                required
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                  {t('password', language)}
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded"
-                  style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
-                  placeholder={t('passwordPlaceholder', language)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                  {t('confirmPassword', language)}
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded"
-                  style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
-                  placeholder={t('confirmPasswordPlaceholder', language)}
-                  required
-                />
-              </div>
-
-              {betaMode && (
-                <div>
-                  <label className="block text-sm font-semibold mb-2" style={{ color: '#EAECEF' }}>
-                    内测码 *
-                  </label>
-                  <input
-                    type="text"
-                    value={betaCode}
-                    onChange={(e) => setBetaCode(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())}
-                    className="w-full px-3 py-2 rounded font-mono"
-                    style={{ background: '#0B0E11', border: '1px solid #2B3139', color: '#EAECEF' }}
-                    placeholder="请输入6位内测码"
-                    maxLength={6}
-                    required={betaMode}
-                  />
-                  <p className="text-xs mt-1" style={{ color: '#848E9C' }}>
-                    内测码由6位字母数字组成，区分大小写
-                  </p>
-                </div>
-              )}
-
-              {error && (
-                <div className="text-sm px-3 py-2 rounded" style={{ background: 'var(--binance-red-bg)', color: 'var(--binance-red)' }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || (betaMode && !betaCode.trim())}
-                className="w-full px-4 py-2 rounded text-sm font-semibold transition-all hover:scale-105 disabled:opacity-50"
-                style={{ background: 'var(--brand-yellow)', color: 'var(--brand-black)' }}
-              >
-                {loading ? t('loading', language) : t('registerButton', language)}
-              </button>
-            </form>
-          )}
-
-          {step === 'setup-otp' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl mb-2">📱</div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#EAECEF' }}>
-                  {t('setupTwoFactor', language)}
-                </h3>
-                <p className="text-sm" style={{ color: '#848E9C' }}>
-                  {t('setupTwoFactorDesc', language)}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="p-3 rounded" style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)' }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                    {t('authStep1Title', language)}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    {t('authStep1Desc', language)}
-                  </p>
-                </div>
-
-                <div className="p-3 rounded" style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)' }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                    {t('authStep2Title', language)}
-                  </p>
-                  <p className="text-xs mb-2" style={{ color: '#848E9C' }}>
-                    {t('authStep2Desc', language)}
-                  </p>
-                  
-                  {qrCodeURL && (
-                    <div className="mt-2">
-                      <p className="text-xs mb-2" style={{ color: '#848E9C' }}>{t('qrCodeHint', language)}</p>
-                      <div className="bg-white p-2 rounded text-center">
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeURL)}`} 
-                             alt="QR Code" className="mx-auto" />
-                      </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
+                密码
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 rounded"
+                style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
+                placeholder="请输入密码（至少8位）"
+                required
+              />
+              {password && (
+                <div className="mt-2 space-y-2">
+                  {/* 密码强度条 */}
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3, 4].map((index) => (
+                      <div
+                        key={index}
+                        className="h-1 flex-1 rounded"
+                        style={{
+                          background: index < passwordStrength ? strengthColors[passwordStrength - 1] : '#2B3139',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {/* 密码规则提示 */}
+                  <div className="text-xs space-y-1" style={{ color: '#848E9C' }}>
+                    <div className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-500' : ''}`}>
+                      <span>✓</span>
+                      <span>至少8个字符</span>
                     </div>
-                  )}
-                  
-                  <div className="mt-2">
-                    <p className="text-xs mb-1" style={{ color: '#848E9C' }}>{t('otpSecret', language)}</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 px-2 py-1 text-xs rounded font-mono" 
-                            style={{ background: 'var(--panel-bg-hover)', color: 'var(--brand-light-gray)' }}>
-                        {otpSecret}
-                      </code>
-                      <button
-                        onClick={() => copyToClipboard(otpSecret)}
-                        className="px-2 py-1 text-xs rounded"
-                        style={{ background: 'var(--brand-yellow)', color: 'var(--brand-black)' }}
-                      >
-                        {t('copy', language)}
-                      </button>
+                    <div className={`flex items-center gap-2 ${/[A-Z]/.test(password) ? 'text-green-500' : ''}`}>
+                      <span>✓</span>
+                      <span>包含大写字母（推荐）</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${/[0-9]/.test(password) ? 'text-green-500' : ''}`}>
+                      <span>✓</span>
+                      <span>包含数字（推荐）</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${/[^A-Za-z0-9]/.test(password) ? 'text-green-500' : ''}`}>
+                      <span>✓</span>
+                      <span>包含特殊字符（推荐）</span>
                     </div>
                   </div>
                 </div>
-
-                <div className="p-3 rounded" style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)' }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                    {t('authStep3Title', language)}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    {t('authStep3Desc', language)}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleSetupComplete}
-                className="w-full px-4 py-2 rounded text-sm font-semibold transition-all hover:scale-105"
-                style={{ background: '#F0B90B', color: '#000' }}
-              >
-                {t('setupCompleteContinue', language)}
-              </button>
+              )}
             </div>
-          )}
 
-          {step === 'verify-otp' && (
-            <form onSubmit={handleOTPVerify} className="space-y-4">
-              <div className="text-center mb-4">
-                <div className="text-4xl mb-2">🔐</div>
-                <p className="text-sm" style={{ color: '#848E9C' }}>
-                  {t('enterOTPCode', language)}<br />
-                  {t('completeRegistrationSubtitle', language)}
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
+                确认密码
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 rounded"
+                style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
+                placeholder="请再次输入密码"
+                required
+              />
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-xs mt-1" style={{ color: '#FF5252' }}>
+                  两次输入的密码不一致
                 </p>
-              </div>
+              )}
+            </div>
 
+            {betaMode && (
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
-                  {t('otpCode', language)}
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#EAECEF' }}>
+                  内测码 *
                 </label>
                 <input
                   type="text"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full px-3 py-2 rounded text-center text-2xl font-mono"
-                  style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
-                  placeholder={t('otpPlaceholder', language)}
+                  value={betaCode}
+                  onChange={(e) => setBetaCode(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())}
+                  className="w-full px-3 py-2 rounded font-mono"
+                  style={{ background: '#0B0E11', border: '1px solid #2B3139', color: '#EAECEF' }}
+                  placeholder="请输入6位内测码"
                   maxLength={6}
-                  required
+                  required={betaMode}
                 />
+                <p className="text-xs mt-1" style={{ color: '#848E9C' }}>
+                  内测码由6位字母数字组成，区分大小写
+                </p>
               </div>
+            )}
 
-              {error && (
-                <div className="text-sm px-3 py-2 rounded" style={{ background: 'var(--binance-red-bg)', color: 'var(--binance-red)' }}>
-                  {error}
+            {/* 错误消息 */}
+            {error && (
+              <div className="px-4 py-3 rounded-lg" style={{ background: 'var(--binance-red-bg)', border: '1px solid var(--binance-red)' }}>
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">⚠️</span>
+                  <div>
+                    <p className="font-semibold mb-1" style={{ color: 'var(--binance-red)' }}>注册失败</p>
+                    <p className="text-sm" style={{ color: 'var(--binance-red)' }}>{error}</p>
+                  </div>
                 </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep('setup-otp')}
-                  className="flex-1 px-4 py-2 rounded text-sm font-semibold"
-                  style={{ background: 'var(--panel-bg-hover)', color: 'var(--text-secondary)' }}
-                >
-                  {t('back', language)}
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || otpCode.length !== 6}
-                  className="flex-1 px-4 py-2 rounded text-sm font-semibold transition-all hover:scale-105 disabled:opacity-50"
-                  style={{ background: '#F0B90B', color: '#000' }}
-                >
-                  {loading ? t('loading', language) : t('completeRegistration', language)}
-                </button>
               </div>
-            </form>
-          )}
+            )}
+
+            {/* 成功消息 */}
+            {success && (
+              <div className="px-4 py-3 rounded-lg" style={{ background: 'rgba(76, 175, 80, 0.1)', border: '1px solid #4CAF50' }}>
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">✓</span>
+                  <div>
+                    <p className="font-semibold mb-1" style={{ color: '#4CAF50' }}>注册成功</p>
+                    <p className="text-sm" style={{ color: '#4CAF50' }}>{success}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || (betaMode && !betaCode.trim()) || password !== confirmPassword}
+              className="w-full px-4 py-3 rounded text-sm font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              style={{ background: 'var(--brand-yellow)', color: 'var(--brand-black)' }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  注册中...
+                </span>
+              ) : (
+                '立即注册'
+              )}
+            </button>
+          </form>
         </div>
 
         {/* Login Link */}
-        {step === 'register' && (
-          <div className="text-center mt-6">
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              已有账户？{' '}
-              <button
-                onClick={() => {
-                  window.history.pushState({}, '', '/login');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                }}
-                className="font-semibold hover:underline transition-colors"
-                style={{ color: 'var(--brand-yellow)' }}
-              >
-                立即登录
-              </button>
-            </p>
-          </div>
-        )}
+        <div className="text-center mt-6">
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            已有账户？{' '}
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/login');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="font-semibold hover:underline transition-colors"
+              style={{ color: 'var(--brand-yellow)' }}
+            >
+              立即登录
+            </button>
+          </p>
+        </div>
         </div>
       </div>
     </div>

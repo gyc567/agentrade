@@ -108,19 +108,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await response.json();
 
-      if (response.ok) {
+      // 检查业务逻辑是否成功（而不是HTTP状态）
+      if (data.success) {
+        // 注册成功，自动登录
+        const userInfo = { id: data.user.id, email: data.user.email };
+        setToken(data.token);
+        setUser(userInfo);
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('auth_user', JSON.stringify(userInfo));
+
         return {
           success: true,
-          userID: data.user_id,
-          otpSecret: data.otp_secret,
-          qrCodeURL: data.qr_code_url,
           message: data.message,
         };
       } else {
-        return { success: false, message: data.error };
+        // 注册失败，返回详细错误信息
+        return {
+          success: false,
+          message: data.error,
+          details: data.details,
+        };
       }
     } catch (error) {
-      return { success: false, message: '注册失败，请重试' };
+      return {
+        success: false,
+        message: '注册失败',
+        details: '网络错误，请检查网络连接后重试',
+      };
     }
   };
 
