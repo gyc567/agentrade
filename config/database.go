@@ -242,6 +242,12 @@ func (d *Database) createTables() error {
 		`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`,
 	}
 
+	// 执行CREATE TABLE语句
+	if err := d.executeQueries(queries); err != nil {
+		return fmt.Errorf("创建数据库表失败: %w", err)
+	}
+
+	// 创建索引
 	for _, query := range indexQueries {
 		if _, err := d.db.Exec(query); err != nil {
 			log.Printf("⚠️ 创建索引失败 [%s]: %v", query, err)
@@ -251,13 +257,18 @@ func (d *Database) createTables() error {
 	return nil
 }
 
+// 执行数据库迁移查询
+func (d *Database) executeQueries(queries []string) error {
 	for _, query := range queries {
 		if _, err := d.db.Exec(query); err != nil {
 			return fmt.Errorf("执行SQL失败 [%s]: %w", query, err)
 		}
 	}
+	return nil
+}
 
-	// 为现有数据库添加新字段（向后兼容）
+// 为现有数据库添加新字段（向后兼容）
+func (d *Database) alterTables() error {
 	alterQueries := []string{
 		`ALTER TABLE exchanges ADD COLUMN hyperliquid_wallet_addr TEXT DEFAULT ''`,
 		`ALTER TABLE exchanges ADD COLUMN aster_user TEXT DEFAULT ''`,

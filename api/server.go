@@ -1351,7 +1351,7 @@ func (s *Server) handleRegister(c *gin.Context) {
         }
 
         // 生成JWT令牌
-        token, err := auth.GenerateToken(userID, req.Email, false)
+        token, err := auth.GenerateJWT(userID, req.Email)
         if err != nil {
                 c.JSON(http.StatusInternalServerError, gin.H{
                         "success": false,
