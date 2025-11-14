@@ -66,18 +66,18 @@ When deploying to Replit:
 - **Multi-Agent Self-Play & Self-Evolution**: Strategies automatically compete and select the best, continuously iterating based on account-level PnL and risk constraints
 - **Integrated Execution & Risk Control**: Low-latency routing, slippage/risk control sandbox, account-level limits, one-click market switching
 
-### 🏢 Backed by [Amber.ac](https://amber.ac)
+### 🏢 Backed by [https://www.monnairegroup.com/](https://www.monnairegroup.com/)
 
 ### 👥 Core Team
 
-- **Tinkle** - [@Web3Tinkle](https://x.com/Web3Tinkle)
-- **Zack** - [@0x_ZackH](https://x.com/0x_ZackH)
+- **Eric** - [@EricBlock2100](https://x.com/EricBlock2100)
+- **Leon** - [@Leon13617912](https://x.com/Leon13617912)
 
 ### 💼 Seed Funding Round Open
 
-We are currently raising our **seed round**. 
+We are currently raising our **seed round**.
 
-**For investment inquiries**, please DM **Tinkle** or **Zack** via Twitter.
+**For investment inquiries**, please DM **Eric** or **Leon** via Twitter.
 
 **For partnerships and collaborations**, please DM our official Twitter [@nofx_ai](https://x.com/nofx_ai).
 
