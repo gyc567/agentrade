@@ -13,7 +13,11 @@ export function getSystemConfig(): Promise<SystemConfig> {
   if (configPromise) {
     return configPromise;
   }
-  configPromise = fetch('/api/config')
+  const API_BASE = import.meta.env.DEV
+    ? '/api'
+    : (import.meta.env.VITE_API_URL || 'https://nofx-gyc567.replit.app') + '/api';
+
+  configPromise = fetch(`${API_BASE}/config`)
     .then((res) => res.json())
     .then((data: SystemConfig) => {
       cachedConfig = data;

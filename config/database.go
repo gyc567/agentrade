@@ -276,10 +276,19 @@ func (d *Database) executeQueries(queries []string) error {
 // 为现有数据库添加新字段（向后兼容）
 func (d *Database) alterTables() error {
 	alterQueries := []string{
+		// 添加users表缺失的字段
+		`ALTER TABLE users ADD COLUMN locked_until DATETIME`,
+		`ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN last_failed_at DATETIME`,
+		`ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1`,
+		`ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN beta_code TEXT`,
+		// 添加exchanges表字段
 		`ALTER TABLE exchanges ADD COLUMN hyperliquid_wallet_addr TEXT DEFAULT ''`,
 		`ALTER TABLE exchanges ADD COLUMN aster_user TEXT DEFAULT ''`,
 		`ALTER TABLE exchanges ADD COLUMN aster_signer TEXT DEFAULT ''`,
 		`ALTER TABLE exchanges ADD COLUMN aster_private_key TEXT DEFAULT ''`,
+		// 添加traders表字段
 		`ALTER TABLE traders ADD COLUMN custom_prompt TEXT DEFAULT ''`,
 		`ALTER TABLE traders ADD COLUMN override_base_prompt BOOLEAN DEFAULT 0`,
 		`ALTER TABLE traders ADD COLUMN is_cross_margin BOOLEAN DEFAULT 1`,             // 默认为全仓模式
@@ -291,6 +300,7 @@ func (d *Database) alterTables() error {
 		`ALTER TABLE traders ADD COLUMN use_coin_pool BOOLEAN DEFAULT 0`,               // 是否使用COIN POOL信号源
 		`ALTER TABLE traders ADD COLUMN use_oi_top BOOLEAN DEFAULT 0`,                  // 是否使用OI TOP信号源
 		`ALTER TABLE traders ADD COLUMN system_prompt_template TEXT DEFAULT 'default'`, // 系统提示词模板名称
+		// 添加ai_models表字段
 		`ALTER TABLE ai_models ADD COLUMN custom_api_url TEXT DEFAULT ''`,              // 自定义API地址
 		`ALTER TABLE ai_models ADD COLUMN custom_model_name TEXT DEFAULT ''`,           // 自定义模型名称
 	}
