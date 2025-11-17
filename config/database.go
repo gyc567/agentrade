@@ -344,10 +344,10 @@ func (d *Database) initDefaultData() error {
 	exchanges := []struct {
 		id, name, typ string
 	}{
-		{"binance", "Binance Futures", "binance"},
-		{"hyperliquid", "Hyperliquid", "hyperliquid"},
-		{"aster", "Aster DEX", "aster"},
-		{"okx", "OKX Futures", "okx"},
+		{"binance", "Binance Futures", "cex"},
+		{"hyperliquid", "Hyperliquid", "dex"},
+		{"aster", "Aster DEX", "dex"},
+		{"okx", "OKX Futures", "cex"},
 	}
 
 	for _, exchange := range exchanges {
