@@ -559,10 +559,25 @@ func (s *Server) handleDeleteTrader(c *gin.Context) {
 func (s *Server) handleStartTrader(c *gin.Context) {
         userID := c.GetString("user_id")
         traderID := c.Param("id")
-        
-        // 校验交易员是否属于当前用户
-        _, _, _, err := s.database.GetTraderConfig(userID, traderID)
+
+        // 校验交易员是否属于当前用户 - 使用统一的查询逻辑
+        traders, err := s.database.GetTraders(userID)
         if err != nil {
+                log.Printf("❌ 获取用户 %s 的交易员列表失败: %v", userID, err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "获取交易员列表失败"})
+                return
+        }
+
+        // 检查指定trader是否存在于用户列表中
+        var userTrader *config.TraderRecord
+        for _, trader := range traders {
+                if trader.ID == traderID {
+                        userTrader = trader
+                        break
+                }
+        }
+
+        if userTrader == nil {
                 c.JSON(http.StatusNotFound, gin.H{"error": "交易员不存在或无访问权限"})
                 return
         }
@@ -602,10 +617,25 @@ func (s *Server) handleStartTrader(c *gin.Context) {
 func (s *Server) handleStopTrader(c *gin.Context) {
         userID := c.GetString("user_id")
         traderID := c.Param("id")
-        
-        // 校验交易员是否属于当前用户
-        _, _, _, err := s.database.GetTraderConfig(userID, traderID)
+
+        // 校验交易员是否属于当前用户 - 使用统一的查询逻辑
+        traders, err := s.database.GetTraders(userID)
         if err != nil {
+                log.Printf("❌ 获取用户 %s 的交易员列表失败: %v", userID, err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "获取交易员列表失败"})
+                return
+        }
+
+        // 检查指定trader是否存在于用户列表中
+        var userTrader *config.TraderRecord
+        for _, trader := range traders {
+                if trader.ID == traderID {
+                        userTrader = trader
+                        break
+                }
+        }
+
+        if userTrader == nil {
                 c.JSON(http.StatusNotFound, gin.H{"error": "交易员不存在或无访问权限"})
                 return
         }
