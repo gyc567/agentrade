@@ -63,9 +63,14 @@ export default function AILearning({ traderId }: AILearningProps) {
   );
 
   if (error) {
+    // 获取详细错误信息
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load AI learning data';
+
     return (
       <div className="rounded p-6" style={{ background: '#1E2329', border: '1px solid #2B3139' }}>
-        <div style={{ color: '#F6465D' }}>{t('loadingError', language)}</div>
+        <div style={{ color: '#F6465D' }}>
+          ⚠️ Failed to load AI learning data: {errorMessage}
+        </div>
       </div>
     );
   }

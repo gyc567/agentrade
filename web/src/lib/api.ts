@@ -72,7 +72,18 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('启动交易员失败');
+    if (!res.ok) {
+      let errorMsg = '启动交易员失败';
+      try {
+        const errorData = await res.json();
+        if (errorData.error) {
+          errorMsg = errorData.error;
+        }
+      } catch (e) {
+        // 使用默认错误信息
+      }
+      throw new Error(errorMsg);
+    }
   },
 
   async stopTrader(traderId: string): Promise<void> {
@@ -80,7 +91,18 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('停止交易员失败');
+    if (!res.ok) {
+      let errorMsg = '停止交易员失败';
+      try {
+        const errorData = await res.json();
+        if (errorData.error) {
+          errorMsg = errorData.error;
+        }
+      } catch (e) {
+        // 使用默认错误信息
+      }
+      throw new Error(errorMsg);
+    }
   },
 
   async updateTraderPrompt(traderId: string, customPrompt: string): Promise<void> {
@@ -285,7 +307,18 @@ export const api = {
     const res = await fetch(url, {
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('获取AI学习数据失败');
+    if (!res.ok) {
+      let errorMsg = '获取AI学习数据失败';
+      try {
+        const errorData = await res.json();
+        if (errorData.error) {
+          errorMsg = errorData.error;
+        }
+      } catch (e) {
+        // 使用默认错误信息
+      }
+      throw new Error(errorMsg);
+    }
     return res.json();
   },
 

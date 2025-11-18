@@ -233,7 +233,11 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
     }
   };
 
-  const handleToggleTrader = async (traderId: string, running: boolean) => {
+  const handleToggleTrader = async (traderId: string, running: boolean, retryCount = 0) => {
+    const MAX_RETRIES = 2;
+    const action = running ? 'stop' : 'start';
+    const actionText = running ? '停止' : '启动';
+
     try {
       if (running) {
         await api.stopTrader(traderId);
@@ -241,9 +245,66 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
         await api.startTrader(traderId);
       }
       mutateTraders();
+
+      // 显示成功提示
+      console.log(`✅ Trader ${actionText}成功: ${traderId}`);
     } catch (error) {
-      console.error('Failed to toggle trader:', error);
-      alert(t('operationFailed', language));
+      console.error('Trader toggle error:', {
+        traderId,
+        action,
+        retryCount,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
+      // 改进错误处理：根据错误类型提供不同的用户指导
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      let userMessage = '';
+      let userAction = '';
+      let shouldRetry = false;
+
+      if (errorMessage.includes('不存在') || errorMessage.includes('404')) {
+        // 数据不一致错误 - 尝试刷新数据后重试
+        if (retryCount < MAX_RETRIES) {
+          console.log(`🔄 检测到数据不一致，刷新数据并重试 (${retryCount + 1}/${MAX_RETRIES})...`);
+          mutateTraders(); // 刷新trader列表
+          shouldRetry = true;
+          userMessage = `${actionText}失败：交易员数据不一致`;
+          userAction = `正在刷新数据并重试... (${retryCount + 1}/${MAX_RETRIES})`;
+        } else {
+          userMessage = `${actionText}失败：交易员数据不一致`;
+          userAction = '数据刷新后仍有问题，请联系管理员检查数据，或手动刷新页面重试';
+        }
+      } else if (errorMessage.includes('未授权') || errorMessage.includes('401')) {
+        // 认证错误
+        userMessage = `${actionText}失败：认证已过期`;
+        userAction = '请重新登录后再试';
+      } else if (errorMessage.includes('网络') || errorMessage.includes('fetch')) {
+        // 网络错误 - 自动重试
+        if (retryCount < MAX_RETRIES) {
+          console.log(`🔄 网络错误，重试中... (${retryCount + 1}/${MAX_RETRIES})`);
+          shouldRetry = true;
+          userMessage = `${actionText}失败：网络连接异常`;
+          userAction = `正在重试... (${retryCount + 1}/${MAX_RETRIES})`;
+        } else {
+          userMessage = `${actionText}失败：网络连接异常`;
+          userAction = '请检查网络连接后重试';
+        }
+      } else {
+        // 其他错误
+        userMessage = `${actionText}失败：${errorMessage}`;
+        userAction = '请稍后重试或联系管理员';
+      }
+
+      // 如果需要重试，延迟后重新执行
+      if (shouldRetry) {
+        alert(`${userMessage}\n\n${userAction}`);
+        setTimeout(() => {
+          handleToggleTrader(traderId, running, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // 递增延迟
+      } else {
+        alert(`${userMessage}\n\n${userAction}`);
+      }
     }
   };
 
