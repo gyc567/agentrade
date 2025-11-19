@@ -1217,7 +1217,7 @@ function ExchangeConfigModal({
 }: {
   allExchanges: Exchange[];
   editingExchangeId: string | null;
-  onSave: (exchangeId: string, apiKey: string, secretKey?: string, testnet?: boolean, hyperliquidWalletAddr?: string, asterUser?: string, asterSigner?: string, asterPrivateKey?: string) => Promise<void>;
+  onSave: (exchangeId: string, apiKey: string, secretKey?: string, testnet?: boolean, hyperliquidWalletAddr?: string, asterUser?: string, asterSigner?: string, asterPrivateKey?: string, okxPassphrase?: string) => Promise<void>;
   onDelete: (exchangeId: string) => void;
   onClose: () => void;
   language: Language;
@@ -1291,7 +1291,7 @@ function ExchangeConfigModal({
       await onSave(selectedExchangeId, '', '', testnet, undefined, asterUser.trim(), asterSigner.trim(), asterPrivateKey.trim());
     } else if (selectedExchange?.id === 'okx') {
       if (!apiKey.trim() || !secretKey.trim() || !passphrase.trim()) return;
-      await onSave(selectedExchangeId, apiKey.trim(), secretKey.trim(), testnet);
+      await onSave(selectedExchangeId, apiKey.trim(), secretKey.trim(), testnet, undefined, undefined, undefined, undefined, passphrase.trim());
     } else {
       // 默认情况（其他CEX交易所）
       if (!apiKey.trim() || !secretKey.trim()) return;
