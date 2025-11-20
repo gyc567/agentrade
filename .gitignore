@@ -44,3 +44,4 @@ web/dist/
 web/.vite/
 web/yarn.lock
 .vercel
+.env.local

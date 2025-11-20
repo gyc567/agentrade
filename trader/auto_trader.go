@@ -454,19 +454,24 @@ func (at *AutoTrader) buildTradingContext() (*decision.Context, error) {
 		return nil, fmt.Errorf("获取账户余额失败: %w", err)
 	}
 
-	// 获取账户字段
+	// 获取账户字段（使用OKXTrader返回的正确字段名）
 	totalWalletBalance := 0.0
 	totalUnrealizedProfit := 0.0
 	availableBalance := 0.0
 
-	if wallet, ok := balance["totalWalletBalance"].(float64); ok {
-		totalWalletBalance = wallet
+	// 从OKXTrader.GetBalance()返回的"total"字段获取总资产
+	if total, ok := balance["total"].(float64); ok {
+		totalWalletBalance = total
+		log.Printf("✓ 从OKX获取总资产: %.8f", total)
 	}
-	if unrealized, ok := balance["totalUnrealizedProfit"].(float64); ok {
-		totalUnrealizedProfit = unrealized
+	// 从OKXTrader.GetBalance()返回的"free"字段获取可用余额
+	if free, ok := balance["free"].(float64); ok {
+		availableBalance = free
+		log.Printf("✓ 从OKX获取可用余额: %.8f", free)
 	}
-	if avail, ok := balance["availableBalance"].(float64); ok {
-		availableBalance = avail
+	// 从OKXTrader.GetBalance()返回的"used"字段获取已用余额
+	if used, ok := balance["used"].(float64); ok {
+		log.Printf("✓ 从OKX获取已用余额: %.8f", used)
 	}
 
 	// Total Equity = 钱包余额 + 未实现盈亏
@@ -859,23 +864,33 @@ func (at *AutoTrader) GetAccountInfo() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("获取余额失败: %w", err)
 	}
 
-	// 获取账户字段
+	// 获取账户字段（使用OKXTrader返回的正确字段名）
 	totalWalletBalance := 0.0
 	totalUnrealizedProfit := 0.0
 	availableBalance := 0.0
 
-	if wallet, ok := balance["totalWalletBalance"].(float64); ok {
-		totalWalletBalance = wallet
+	// 从OKXTrader.GetBalance()返回的"total"字段获取总资产
+	if total, ok := balance["total"].(float64); ok {
+		totalWalletBalance = total
+		log.Printf("✓ 从OKX获取总资产: %.8f", total)
 	}
-	if unrealized, ok := balance["totalUnrealizedProfit"].(float64); ok {
-		totalUnrealizedProfit = unrealized
+	// 从OKXTrader.GetBalance()返回的"free"字段获取可用余额
+	if free, ok := balance["free"].(float64); ok {
+		availableBalance = free
+		log.Printf("✓ 从OKX获取可用余额: %.8f", free)
 	}
-	if avail, ok := balance["availableBalance"].(float64); ok {
-		availableBalance = avail
+	// 从OKXTrader.GetBalance()返回的"used"字段获取已用余额
+	if used, ok := balance["used"].(float64); ok {
+		log.Printf("✓ 从OKX获取已用余额: %.8f", used)
 	}
 
 	// Total Equity = 钱包余额 + 未实现盈亏
 	totalEquity := totalWalletBalance + totalUnrealizedProfit
+
+	if totalWalletBalance > 0 {
+		log.Printf("✓ 账户余额映射成功: 总资产=%.2f, 可用=%.2f",
+			totalWalletBalance, availableBalance)
+	}
 
 	// 获取持仓计算总保证金
 	positions, err := at.trader.GetPositions()
