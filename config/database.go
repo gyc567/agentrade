@@ -676,6 +676,113 @@ func (d *Database) GetUserByID(userID string) (*User, error) {
 	return &user, nil
 }
 
+// GetUsers 获取用户列表（分页、搜索、排序）
+func (d *Database) GetUsers(page, limit int, search, sort, order string) ([]*User, int, error) {
+	// 参数验证
+	if limit > 100 {
+		limit = 100
+	}
+	if page < 1 {
+		page = 1
+	}
+
+	// 计算偏移量
+	offset := (page - 1) * limit
+
+	// 验证排序字段
+	validSortFields := map[string]bool{
+		"created_at": true,
+		"email":      true,
+	}
+	if !validSortFields[sort] {
+		sort = "created_at"
+	}
+
+	// 验证排序方向
+	if order != "asc" && order != "desc" {
+		order = "desc"
+	}
+
+	// 构建SQL查询
+	var args []interface{}
+	sql := `
+		SELECT id, email, is_active, is_admin, otp_verified,
+		       created_at, updated_at
+		FROM users
+	`
+
+	// 添加搜索条件
+	if search != "" {
+		sql += " WHERE email LIKE ?"
+		args = append(args, "%"+search+"%")
+	}
+
+	// 添加排序
+	sql += fmt.Sprintf(" ORDER BY %s %s", sort, order)
+
+	// 添加分页
+	sql += " LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	// 执行查询
+	rows, err := d.db.Query(sql, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询用户列表失败: %w", err)
+	}
+	defer rows.Close()
+
+	// 处理结果
+	var users []*User
+	for rows.Next() {
+		user := &User{}
+		err := rows.Scan(
+			&user.ID,
+			&user.Email,
+			&user.IsActive,
+			&user.IsAdmin,
+			&user.OTPVerified,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("扫描用户数据失败: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	// 获取总数
+	total, err := d.GetUserCount(search)
+	if err != nil {
+		return nil, 0, fmt.Errorf("获取用户总数失败: %w", err)
+	}
+
+	return users, total, nil
+}
+
+// GetUserCount 获取用户总数
+func (d *Database) GetUserCount(search string) (int, error) {
+	var count int
+	sql := "SELECT COUNT(*) FROM users"
+
+	// 添加搜索条件
+	if search != "" {
+		sql += " WHERE email LIKE ?"
+		row := d.db.QueryRow(sql, "%"+search+"%")
+		err := row.Scan(&count)
+		if err != nil {
+			return 0, fmt.Errorf("获取用户总数失败: %w", err)
+		}
+	} else {
+		row := d.db.QueryRow(sql)
+		err := row.Scan(&count)
+		if err != nil {
+			return 0, fmt.Errorf("获取用户总数失败: %w", err)
+		}
+	}
+
+	return count, nil
+}
+
 // GetAllUsers 获取所有用户ID列表
 func (d *Database) GetAllUsers() ([]string, error) {
 	rows, err := d.db.Query(`SELECT id FROM users ORDER BY id`)

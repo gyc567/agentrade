@@ -334,13 +334,12 @@ export const translations = {
     exitLogin: 'Sign Out',
     signIn: 'Sign In',
     signUp: 'Sign Up',
-    
+
+
     // Hero Section
-    githubStarsInDays: '2.5K+ GitHub Stars in 3 days',
     heroTitle1: 'Read the Market.',
     heroTitle2: 'Write the Trade.',
     heroDescription: 'Monnaire Trading Agent OS is the future standard for AI trading — an open, community-driven agentic trading OS. Supporting Binance, Aster DEX and other exchanges, self-hosted, multi-agent competition, let AI automatically make decisions, execute and optimize trades for you.',
-    poweredBy: 'Powered by Aster DEX and Binance, strategically invested by Amber.ac.',
     
     // Landing Page CTA
     readyToDefine: 'Ready to define the future of AI trading?',
@@ -748,13 +747,12 @@ export const translations = {
     exitLogin: '退出登录',
     signIn: '登录',
     signUp: '注册',
-    
+
+
     // Hero Section
-    githubStarsInDays: '3 天内 2.5K+ GitHub Stars',
     heroTitle1: 'Read the Market.',
     heroTitle2: 'Write the Trade.',
     heroDescription: 'Monnaire Trading Agent OS 是 AI 交易的未来标准——一个开放、社区驱动的代理式交易操作系统。支持 Binance、Aster DEX 等交易所，自托管、多代理竞争，让 AI 为你自动决策、执行和优化交易。',
-    poweredBy: '由 Aster DEX 和 Binance 提供支持，Amber.ac 战略投资。',
     
     // Landing Page CTA
     readyToDefine: '准备好定义 AI 交易的未来吗？',

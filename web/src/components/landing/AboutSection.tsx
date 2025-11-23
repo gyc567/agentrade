@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import { Shield, Target } from 'lucide-react'
 import AnimatedSection from './AnimatedSection'
-import Typewriter from '../Typewriter'
 import { t, Language } from '../../i18n/translations'
 
 interface AboutSectionProps {
@@ -88,34 +87,6 @@ export default function AboutSection({ language }: AboutSectionProps) {
             </motion.div>
           </motion.div>
 
-          <div className='relative'>
-            <div
-              className='rounded-2xl p-8'
-              style={{
-                background: 'var(--brand-black)',
-                border: '1px solid var(--panel-border)',
-              }}
-            >
-              <Typewriter
-                lines={[
-                  '$ git clone https://github.com/tinkle-community/nofx.git',
-                  '$ cd nofx',
-                  '$ chmod +x start.sh',
-                  '$ ./start.sh start --build',
-                  t('startupMessages1', language),
-                  t('startupMessages2', language),
-                  t('startupMessages3', language),
-                ]}
-                typingSpeed={70}
-                lineDelay={900}
-                className='text-sm font-mono'
-                style={{
-                  color: '#00FF88',
-                  textShadow: '0 0 8px rgba(0,255,136,0.4)',
-                }}
-              />
-            </div>
-          </div>
         </div>
       </div>
     </AnimatedSection>
