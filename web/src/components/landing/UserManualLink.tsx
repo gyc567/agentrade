@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion'
 import { BookText } from 'lucide-react'
+import { Language } from '../../i18n/translations'
 
-export default function UserManualLink() {
+interface UserManualLinkProps {
+  language: Language
+}
+
+export default function UserManualLink({ language }: UserManualLinkProps) {
   return (
     <div className='flex justify-center my-12'>
       <motion.a
-        href='/user-manual/en'
+        href={`/user-manual/${language}`}
         className='flex items-center gap-2 px-8 py-3 rounded-lg font-semibold'
         style={{
           background: 'rgba(240, 185, 11, 0.1)',

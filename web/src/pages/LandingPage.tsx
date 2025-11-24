@@ -49,7 +49,7 @@ export function LandingPage() {
       <CommunitySection />
 
       {/* User Manual Link */}
-      <UserManualLink />
+      <UserManualLink language={language} />
 
       {/* CTA */}
       <AnimatedSection backgroundColor='var(--panel-bg)'>
