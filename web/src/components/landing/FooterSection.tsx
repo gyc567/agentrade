@@ -146,11 +146,21 @@ export default function FooterSection({ language }: FooterSectionProps) {
               <li>
                 <a
                   className='hover:text-[#F0B90B]'
-                  href='https://amber.ac/'
+                  href='https://www.okx.com/'
                   target='_blank'
                   rel='noopener noreferrer'
                 >
-                  Amber.ac <span className='opacity-70'>{t('strategicInvestment', language)}</span>
+                  OKX
+                </a>
+              </li>
+              <li>
+                <a
+                  className='hover:text-[#F0B90B]'
+                  href='https://monnairegroup.com/'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  monnairegroup.com <span className='opacity-70'>{t('strategicInvestment', language)}</span>
                 </a>
               </li>
             </ul>
