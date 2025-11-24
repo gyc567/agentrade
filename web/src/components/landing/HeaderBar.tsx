@@ -223,7 +223,9 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
                   href={
                     item.key === 'community'
                       ? 'https://t.me/monnaire_capital_research'
-                      : `#${item.key === 'features' ? 'features' : 'how-it-works'}`
+                      : item.key === 'features'
+                      ? '#features'
+                      : `/user-manual/${language}`
                   }
                   target={item.key === 'community' ? '_blank' : undefined}
                   rel={item.key === 'community' ? 'noopener noreferrer' : undefined}
@@ -508,7 +510,9 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
               href={
                 item.key === 'community'
                   ? 'https://t.me/monnaire_capital_research'
-                  : `#${item.key === 'features' ? 'features' : 'how-it-works'}`
+                  : item.key === 'features'
+                  ? '#features'
+                  : `/user-manual/${language}`
               }
               target={item.key === 'community' ? '_blank' : undefined}
               rel={item.key === 'community' ? 'noopener noreferrer' : undefined}
