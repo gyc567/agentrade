@@ -5,7 +5,7 @@ export default function UserManualLink() {
   return (
     <div className='flex justify-center my-12'>
       <motion.a
-        href='/docs/user-manual'
+        href='/docs/user-manual-en.md'
         className='flex items-center gap-2 px-8 py-3 rounded-lg font-semibold'
         style={{
           background: 'rgba(240, 185, 11, 0.1)',

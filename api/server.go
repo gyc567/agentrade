@@ -8,6 +8,7 @@ import (
         "nofx/auth"
         "nofx/config"
         "nofx/decision"
+        "nofx/email"
         "nofx/manager"
         "os"
         "strconv"
@@ -23,6 +24,7 @@ type Server struct {
         router        *gin.Engine
         traderManager *manager.TraderManager
         database      *config.Database
+        emailClient   *email.ResendClient
         port          int
 }
 
@@ -40,6 +42,7 @@ func NewServer(traderManager *manager.TraderManager, database *config.Database, 
                 router:        router,
                 traderManager: traderManager,
                 database:      database,
+                emailClient:   email.NewResendClient(),
                 port:          port,
         }
 
@@ -2018,9 +2021,21 @@ func (s *Server) handleRequestPasswordReset(c *gin.Context) {
                 return
         }
 
-        // TODO: 发送邮件（这里先只记录日志）
-        resetLink := fmt.Sprintf("https://your-frontend-domain.com/reset-password?token=%s", token)
-        log.Printf("📧 密码重置邮件 - 收件人: %s, 重置链接: %s", req.Email, resetLink)
+        // 获取前端URL（从环境变量或使用默认值）
+        frontendURL := os.Getenv("FRONTEND_URL")
+        if frontendURL == "" {
+                frontendURL = "https://web-pink-omega-40.vercel.app" // 默认前端URL
+        }
+
+        // 发送密码重置邮件
+        err = s.emailClient.SendPasswordResetEmail(req.Email, token, frontendURL)
+        if err != nil {
+                log.Printf("❌ 发送密码重置邮件失败: %v", err)
+                // 即使邮件发送失败，也返回成功消息（防止邮箱枚举）
+                // 但记录错误日志供管理员查看
+        } else {
+                log.Printf("✅ 密码重置邮件已发送 - 收件人: %s", req.Email)
+        }
 
         c.JSON(http.StatusOK, gin.H{
                 "message": "如果该邮箱已注册，您将收到密码重置邮件",
