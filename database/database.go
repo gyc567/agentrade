@@ -116,5 +116,27 @@ func (db *DatabaseImpl) GetUserByEmail(email string) (*User, error) {
 	return user, nil
 }
 
+// GetSystemConfig 获取系统配置
+func (db *DatabaseImpl) GetSystemConfig(key string) (string, error) {
+	query := "SELECT value FROM system_config WHERE key = $1"
+	// 如果是SQLite，使用?代替$1
+	if !db.usingNeon {
+		query = strings.ReplaceAll(query, "$1", "?")
+	}
+
+	row := db.currentDB.QueryRow(query, key)
+
+	var value string
+	if err := row.Scan(&value); err != nil {
+		if err == sql.ErrNoRows {
+			// 如果 key 不存在，返回空字符串和 nil 错误
+			return "", nil
+		}
+		return "", err
+	}
+
+	return value, nil
+}
+
 // 其他方法需要类似处理，确保SQL语法兼容
 // ...

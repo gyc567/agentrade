@@ -1169,7 +1169,14 @@ func (d *Database) GetTraderConfig(userID, traderID string) (*TraderRecord, *AIM
 func (d *Database) GetSystemConfig(key string) (string, error) {
 	var value string
 	err := d.db.QueryRow(`SELECT value FROM system_config WHERE key = ?`, key).Scan(&value)
-	return value, err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 如果 key 不存在，返回空字符串和 nil 错误
+			return "", nil
+		}
+		return "", err
+	}
+	return value, nil
 }
 
 // SetSystemConfig 设置系统配置

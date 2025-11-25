@@ -110,7 +110,7 @@ func migrateUsers(sqliteDB, pgDB *sql.DB) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var id int
+		var id interface{}
 		var email string
 		var passwordHash string
 		var isAdmin bool
@@ -119,8 +119,25 @@ func migrateUsers(sqliteDB, pgDB *sql.DB) error {
 			return err
 		}
 
+		// 转换id为合适的类型
+		var pgID int
+		switch v := id.(type) {
+		case int:
+			pgID = v
+		case int64:
+			pgID = int(v)
+		case float64:
+			pgID = int(v)
+		case string:
+			// 如果id是字符串类型，跳过
+			continue
+		default:
+			// 其他未知类型，跳过
+			continue
+		}
+
 		_, err := pgDB.Exec("INSERT INTO users (id, email, password_hash, is_admin) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING",
-			id, email, passwordHash, isAdmin)
+			pgID, email, passwordHash, isAdmin)
 		if err != nil {
 			return err
 		}
