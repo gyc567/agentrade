@@ -1262,8 +1262,8 @@ func (d *Database) UpdateExchange(userID, id string, enabled bool, apiKey, secre
                 // 创建用户特定的配置，使用原始的交易所ID
                 _, err = d.exec(`
                         INSERT INTO exchanges (id, user_id, name, type, enabled, api_key, secret_key, testnet,
-                                               hyperliquid_wallet_addr, aster_user, aster_signer, aster_private_key, okx_passphrase, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                                               hyperliquid_wallet_addr, aster_user, aster_signer, aster_private_key, okx_passphrase)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, id, userID, name, typ, enabled, apiKey, secretKey, testnet, hyperliquidWalletAddr, asterUser, asterSigner, asterPrivateKey, okxPassphrase)
 
                 if err != nil {
