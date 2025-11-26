@@ -487,9 +487,9 @@ func (d *Database) executeQueries(queries []string) error {
 func (d *Database) alterTables() error {
         alterQueries := []string{
                 // 添加users表缺失的字段
-                `ALTER TABLE users ADD COLUMN locked_until DATETIME`,
+                `ALTER TABLE users ADD COLUMN locked_until TIMESTAMP`,
                 `ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0`,
-                `ALTER TABLE users ADD COLUMN last_failed_at DATETIME`,
+                `ALTER TABLE users ADD COLUMN last_failed_at TIMESTAMP`,
                 `ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1`,
                 `ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0`,
                 `ALTER TABLE users ADD COLUMN beta_code TEXT`,
