@@ -15,73 +15,52 @@ import (
 
         "github.com/google/uuid"
         _ "github.com/lib/pq"
-        _ "github.com/mattn/go-sqlite3"  // 开发环境回退
 )
 
 // Database 配置数据库
 type Database struct {
-        db       *sql.DB
-        isSQLite bool  // 是否使用SQLite
+        db *sql.DB
 }
 
-// NewDatabase 创建配置数据库（优先PostgreSQL，开发环境回退SQLite）
+// NewDatabase 创建配置数据库（仅支持PostgreSQL）
 func NewDatabase(dbPath string) (*Database, error) {
         databaseURL := os.Getenv("DATABASE_URL")
-
-        // 如果设置了DATABASE_URL，优先使用PostgreSQL
-        if databaseURL != "" {
-                log.Println("🔄 连接PostgreSQL数据库...")
-                db, err := sql.Open("postgres", databaseURL)
-                if err != nil {
-                        return nil, fmt.Errorf("连接数据库失败: %w", err)
-                }
-
-                if pingErr := db.Ping(); pingErr != nil {
-                        db.Close()
-                        return nil, fmt.Errorf("数据库连接测试失败: %w", pingErr)
-                }
-
-                log.Println("✅ 成功连接PostgreSQL数据库!")
-
-                database := &Database{db: db, isSQLite: false}
-                if err := database.createTables(); err != nil {
-                        return nil, fmt.Errorf("创建表失败: %w", err)
-                }
-
-                // 为现有数据库添加新字段（向后兼容）
-                if err := database.alterTables(); err != nil {
-                        log.Printf("⚠️ 数据库迁移警告: %v", err)
-                }
-
-                if err := database.initDefaultData(); err != nil {
-                        return nil, fmt.Errorf("初始化默认数据失败: %w", err)
-                }
-
-                return database, nil
+        if databaseURL == "" {
+                return nil, fmt.Errorf("DATABASE_URL环境变量未设置")
         }
 
-        // 开发环境回退：使用SQLite（仅用于本地开发）
-        log.Println("⚠️  WARNING: DATABASE_URL未设置，使用SQLite回退（仅用于开发环境）")
-        log.Printf("📋 使用SQLite数据库: %s", dbPath)
-        db, err := sql.Open("sqlite3", dbPath)
+        log.Println("🔄 连接PostgreSQL数据库...")
+        db, err := sql.Open("postgres", databaseURL)
         if err != nil {
-                return nil, fmt.Errorf("打开数据库失败: %w", err)
+                return nil, fmt.Errorf("连接数据库失败: %w", err)
         }
 
-        database := &Database{db: db, isSQLite: true}
-        if err := database.createTablesSQLite(); err != nil {
+        if pingErr := db.Ping(); pingErr != nil {
+                db.Close()
+                return nil, fmt.Errorf("数据库连接测试失败: %w", pingErr)
+        }
+
+        log.Println("✅ 成功连接PostgreSQL数据库!")
+
+        database := &Database{db: db}
+        log.Println("🔄 开始创建表...")
+        if err := database.createTables(); err != nil {
                 return nil, fmt.Errorf("创建表失败: %w", err)
         }
+        log.Println("✅ 表创建成功!")
 
+        log.Println("🔄 开始修改表结构...")
         if err := database.alterTables(); err != nil {
                 log.Printf("⚠️ 数据库迁移警告: %v", err)
         }
+        log.Println("✅ 表结构修改完成!")
 
+        log.Println("🔄 开始初始化默认数据...")
         if err := database.initDefaultData(); err != nil {
                 return nil, fmt.Errorf("初始化默认数据失败: %w", err)
         }
+        log.Println("✅ 默认数据初始化完成!")
 
-        log.Println("✅ SQLite数据库初始化成功（开发模式）")
         return database, nil
 }
 
@@ -113,9 +92,6 @@ func (d *Database) exec(query string, args ...interface{}) (sql.Result, error) {
 
 // createTables 创建数据库表
 func (d *Database) createTables() error {
-        if d.isSQLite {
-                return d.createTablesSQLite()
-        }
         return d.createTablesPostgres()
 }
 
@@ -259,219 +235,6 @@ func (d *Database) createTablesPostgres() error {
         return nil
 }
 
-// createTablesSQLite SQLite版本的表创建
-func (d *Database) createTablesSQLite() error {
-        queries := []string{
-                // AI模型配置表
-                `CREATE TABLE IF NOT EXISTS ai_models (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT NOT NULL DEFAULT 'default',
-                        name TEXT NOT NULL,
-                        provider TEXT NOT NULL,
-                        enabled BOOLEAN DEFAULT 0,
-                        api_key TEXT DEFAULT '',
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )`,
-
-                // 交易所配置表
-                `CREATE TABLE IF NOT EXISTS exchanges (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT NOT NULL DEFAULT 'default',
-                        name TEXT NOT NULL,
-                        type TEXT NOT NULL,
-                        enabled BOOLEAN DEFAULT 0,
-                        api_key TEXT DEFAULT '',
-                        secret_key TEXT DEFAULT '',
-                        testnet BOOLEAN DEFAULT 0,
-                        hyperliquid_wallet_addr TEXT DEFAULT '',
-                        aster_user TEXT DEFAULT '',
-                        aster_signer TEXT DEFAULT '',
-                        aster_private_key TEXT DEFAULT '',
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )`,
-
-                // 用户信号源配置表
-                `CREATE TABLE IF NOT EXISTS user_signal_sources (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id TEXT NOT NULL,
-                        coin_pool_url TEXT DEFAULT '',
-                        oi_top_url TEXT DEFAULT '',
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                        UNIQUE(user_id)
-                )`,
-
-                // 交易员配置表
-                `CREATE TABLE IF NOT EXISTS traders (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT NOT NULL DEFAULT 'default',
-                        name TEXT NOT NULL,
-                        ai_model_id TEXT NOT NULL,
-                        exchange_id TEXT NOT NULL,
-                        initial_balance REAL NOT NULL,
-                        scan_interval_minutes INTEGER DEFAULT 3,
-                        is_running BOOLEAN DEFAULT 0,
-                        btc_eth_leverage INTEGER DEFAULT 5,
-                        altcoin_leverage INTEGER DEFAULT 5,
-                        trading_symbols TEXT DEFAULT '',
-                        use_coin_pool BOOLEAN DEFAULT 0,
-                        use_oi_top BOOLEAN DEFAULT 0,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                        FOREIGN KEY (ai_model_id) REFERENCES ai_models(id),
-                        FOREIGN KEY (exchange_id) REFERENCES exchanges(id)
-                )`,
-
-                // 用户表
-                `CREATE TABLE IF NOT EXISTS users (
-                        id TEXT PRIMARY KEY,
-                        email TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        otp_secret TEXT,
-                        otp_verified BOOLEAN DEFAULT 0,
-                        locked_until DATETIME,
-                        failed_attempts INTEGER DEFAULT 0,
-                        last_failed_at DATETIME,
-                        is_active BOOLEAN DEFAULT 1,
-                        is_admin BOOLEAN DEFAULT 0,
-                        beta_code TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )`,
-
-                // 密码重置令牌表
-                `CREATE TABLE IF NOT EXISTS password_resets (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT NOT NULL,
-                        token_hash TEXT NOT NULL,
-                        expires_at DATETIME NOT NULL,
-                        used_at DATETIME,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )`,
-
-                // 登录尝试记录表
-                `CREATE TABLE IF NOT EXISTS login_attempts (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT,
-                        email TEXT NOT NULL,
-                        ip_address TEXT NOT NULL,
-                        success BOOLEAN NOT NULL,
-                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        user_agent TEXT,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-                )`,
-
-                // 审计日志表
-                `CREATE TABLE IF NOT EXISTS audit_logs (
-                        id TEXT PRIMARY KEY,
-                        user_id TEXT,
-                        action TEXT NOT NULL,
-                        ip_address TEXT NOT NULL,
-                        user_agent TEXT,
-                        success BOOLEAN NOT NULL,
-                        details TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-                )`,
-
-                // 系统配置表
-                `CREATE TABLE IF NOT EXISTS system_config (
-                        key TEXT PRIMARY KEY,
-                        value TEXT NOT NULL,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )`,
-
-                // 内测码表
-                `CREATE TABLE IF NOT EXISTS beta_codes (
-                        code TEXT PRIMARY KEY,
-                        used BOOLEAN DEFAULT 0,
-                        used_by TEXT DEFAULT '',
-                        used_at DATETIME DEFAULT NULL,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )`,
-
-                // 触发器：自动更新 updated_at
-                `CREATE TRIGGER IF NOT EXISTS update_users_updated_at
-                        AFTER UPDATE ON users
-                        BEGIN
-                                UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END`,
-
-                `CREATE TRIGGER IF NOT EXISTS update_ai_models_updated_at
-                        AFTER UPDATE ON ai_models
-                        BEGIN
-                                UPDATE ai_models SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END`,
-
-                `CREATE TRIGGER IF NOT EXISTS update_exchanges_updated_at
-                        AFTER UPDATE ON exchanges
-                        BEGIN
-                                UPDATE exchanges SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END`,
-
-                `CREATE TRIGGER IF NOT EXISTS update_traders_updated_at
-                        AFTER UPDATE ON traders
-                        BEGIN
-                                UPDATE traders SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END`,
-
-                `CREATE TRIGGER IF NOT EXISTS update_user_signal_sources_updated_at
-                        AFTER UPDATE ON user_signal_sources
-                        BEGIN
-                                UPDATE user_signal_sources SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-                        END`,
-
-                `CREATE TRIGGER IF NOT EXISTS update_system_config_updated_at
-                        AFTER UPDATE ON system_config
-                        BEGIN
-                                UPDATE system_config SET updated_at = CURRENT_TIMESTAMP WHERE key = NEW.key;
-                        END`,
-        }
-
-        // 创建索引
-        indexQueries := []string{
-                // 用户表索引
-                `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
-                `CREATE INDEX IF NOT EXISTS idx_users_locked_until ON users(locked_until)`,
-                `CREATE INDEX IF NOT EXISTS idx_users_failed_attempts ON users(failed_attempts)`,
-
-                // 密码重置表索引
-                `CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id, used_at)`,
-                `CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token_hash)`,
-                `CREATE INDEX IF NOT EXISTS idx_password_resets_expires ON password_resets(expires_at)`,
-
-                // 登录尝试表索引
-                `CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip_address, timestamp)`,
-                `CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts(email, timestamp)`,
-                `CREATE INDEX IF NOT EXISTS idx_login_attempts_user_id ON login_attempts(user_id)`,
-
-                // 审计日志表索引
-                `CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id)`,
-                `CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`,
-                `CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`,
-        }
-
-        // 执行CREATE TABLE语句
-        if err := d.executeQueries(queries); err != nil {
-                return fmt.Errorf("创建数据库表失败: %w", err)
-        }
-
-        // 创建索引
-        for _, query := range indexQueries {
-                if _, err := d.exec(query); err != nil {
-                        log.Printf("⚠️ 创建索引失败 [%s]: %v", query, err)
-                }
-        }
-
-        return nil
-}
 
 // 执行数据库迁移查询
 func (d *Database) executeQueries(queries []string) error {
