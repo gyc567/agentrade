@@ -15,6 +15,7 @@ import (
 
         "github.com/google/uuid"
         _ "github.com/lib/pq"
+        _ "github.com/mattn/go-sqlite3"  // 开发环境回退
 )
 
 // Database 配置数据库
@@ -22,32 +23,55 @@ type Database struct {
         db *sql.DB
 }
 
-// NewDatabase 创建配置数据库（仅支持PostgreSQL）
+// NewDatabase 创建配置数据库（优先PostgreSQL，开发环境回退SQLite）
 func NewDatabase(dbPath string) (*Database, error) {
         databaseURL := os.Getenv("DATABASE_URL")
-        if databaseURL == "" {
-                return nil, fmt.Errorf("DATABASE_URL环境变量未设置")
+
+        // 如果设置了DATABASE_URL，优先使用PostgreSQL
+        if databaseURL != "" {
+                log.Println("🔄 连接PostgreSQL数据库...")
+                db, err := sql.Open("postgres", databaseURL)
+                if err != nil {
+                        return nil, fmt.Errorf("连接数据库失败: %w", err)
+                }
+
+                if pingErr := db.Ping(); pingErr != nil {
+                        db.Close()
+                        return nil, fmt.Errorf("数据库连接测试失败: %w", pingErr)
+                }
+
+                log.Println("✅ 成功连接PostgreSQL数据库!")
+
+                database := &Database{db: db}
+                if err := database.createTables(); err != nil {
+                        return nil, fmt.Errorf("创建表失败: %w", err)
+                }
+
+                // 为现有数据库添加新字段（向后兼容）
+                if err := database.alterTables(); err != nil {
+                        log.Printf("⚠️ 数据库迁移警告: %v", err)
+                }
+
+                if err := database.initDefaultData(); err != nil {
+                        return nil, fmt.Errorf("初始化默认数据失败: %w", err)
+                }
+
+                return database, nil
         }
 
-        log.Println("🔄 连接PostgreSQL数据库...")
-        db, err := sql.Open("postgres", databaseURL)
+        // 开发环境回退：使用SQLite（仅用于本地开发）
+        log.Println("⚠️  WARNING: DATABASE_URL未设置，使用SQLite回退（仅用于开发环境）")
+        log.Printf("📋 使用SQLite数据库: %s", dbPath)
+        db, err := sql.Open("sqlite3", dbPath)
         if err != nil {
-                return nil, fmt.Errorf("连接数据库失败: %w", err)
+                return nil, fmt.Errorf("打开数据库失败: %w", err)
         }
-
-        if pingErr := db.Ping(); pingErr != nil {
-                db.Close()
-                return nil, fmt.Errorf("数据库连接测试失败: %w", pingErr)
-        }
-
-        log.Println("✅ 成功连接PostgreSQL数据库!")
 
         database := &Database{db: db}
-        if err := database.createTables(); err != nil {
+        if err := database.createTablesSQLite(); err != nil {
                 return nil, fmt.Errorf("创建表失败: %w", err)
         }
 
-        // 为现有数据库添加新字段（向后兼容）
         if err := database.alterTables(); err != nil {
                 log.Printf("⚠️ 数据库迁移警告: %v", err)
         }
@@ -56,6 +80,7 @@ func NewDatabase(dbPath string) (*Database, error) {
                 return nil, fmt.Errorf("初始化默认数据失败: %w", err)
         }
 
+        log.Println("✅ SQLite数据库初始化成功（开发模式）")
         return database, nil
 }
 
@@ -87,6 +112,15 @@ func (d *Database) exec(query string, args ...interface{}) (sql.Result, error) {
 
 // createTables 创建数据库表
 func (d *Database) createTables() error {
+        // 检查数据库类型（通过查询表结构）
+        var tableName string
+        err := d.db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1").Scan(&tableName)
+        if err == nil {
+                // 是SQLite
+                return d.createTablesSQLite()
+        }
+
+        // 是PostgreSQL
         return d.createTablesPostgres()
 }
 
