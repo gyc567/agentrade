@@ -957,10 +957,27 @@ func (t *OKXTrader) makeRequest(method, endpoint string, params map[string]strin
                 return nil, fmt.Errorf("解析响应失败: %w", err)
         }
 
+        // 记录完整响应用于调试
+        log.Printf("📥 OKX响应: %s", string(bodyBytes))
+
         // 检查OKX错误码
         if code, ok := result["code"].(string); ok && code != "0" {
                 msg, _ := result["msg"].(string)
-                return nil, fmt.Errorf("OKX API错误 [%s]: %s", code, msg)
+                
+                // 尝试从data数组获取详细错误信息
+                detailError := ""
+                if data, ok := result["data"].([]interface{}); ok && len(data) > 0 {
+                        if item, ok := data[0].(map[string]interface{}); ok {
+                                sCode, _ := item["sCode"].(string)
+                                sMsg, _ := item["sMsg"].(string)
+                                if sCode != "" || sMsg != "" {
+                                        detailError = fmt.Sprintf(" (详细: sCode=%s, sMsg=%s)", sCode, sMsg)
+                                }
+                        }
+                }
+                
+                log.Printf("❌ OKX API错误: code=%s, msg=%s%s", code, msg, detailError)
+                return nil, fmt.Errorf("OKX API错误 [%s]: %s%s", code, msg, detailError)
         }
 
         return result, nil
