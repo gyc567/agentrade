@@ -205,17 +205,18 @@ func (t *OKXTrader) OpenLong(symbol string, quantity float64, leverage int) (map
         okxSymbol := convertToOKXSymbol(symbol)
         log.Printf("📊 OKX开多: 原始交易对=%s, OKX格式=%s, 数量=%f, 杠杆=%d", symbol, okxSymbol, quantity, leverage)
 
+        // 设置杠杆（OKX要求先设置杠杆）
+        if err := t.SetLeverage(okxSymbol, leverage); err != nil {
+                log.Printf("⚠️ 设置杠杆失败: %v", err)
+        }
+
         order := map[string]string{
                 "instId":  okxSymbol,        // 产品ID，如 "BTC-USDT-SWAP"
                 "tdMode":  "cross",          // 保证金模式：cross(全仓) / isolated(逐仓)
                 "side":    "buy",            // 订单方向：buy(买入开多)
+                "posSide": "long",           // 仓位方向：long(多头) - OKX多空模式必须
                 "ordType": "market",         // 订单类型：market(市价)
                 "sz":      strconv.FormatFloat(quantity, 'f', -1, 64), // 委托数量
-        }
-
-        // 设置杠杆（OKX要求先设置杠杆）
-        if err := t.SetLeverage(okxSymbol, leverage); err != nil {
-                log.Printf("⚠️ 设置杠杆失败: %v", err)
         }
 
         return t.placeOrder(order)
@@ -231,16 +232,18 @@ func (t *OKXTrader) OpenShort(symbol string, quantity float64, leverage int) (ma
         okxSymbol := convertToOKXSymbol(symbol)
         log.Printf("📊 OKX开空: 原始交易对=%s, OKX格式=%s, 数量=%f, 杠杆=%d", symbol, okxSymbol, quantity, leverage)
 
+        // 设置杠杆（OKX要求先设置杠杆）
+        if err := t.SetLeverage(okxSymbol, leverage); err != nil {
+                log.Printf("⚠️ 设置杠杆失败: %v", err)
+        }
+
         order := map[string]string{
                 "instId":  okxSymbol,
                 "tdMode":  "cross",
                 "side":    "sell",           // 卖出开空
+                "posSide": "short",          // 仓位方向：short(空头) - OKX多空模式必须
                 "ordType": "market",
                 "sz":      strconv.FormatFloat(quantity, 'f', -1, 64),
-        }
-
-        if err := t.SetLeverage(okxSymbol, leverage); err != nil {
-                log.Printf("⚠️ 设置杠杆失败: %v", err)
         }
 
         return t.placeOrder(order)
@@ -289,6 +292,7 @@ func (t *OKXTrader) CloseLong(symbol string, quantity float64) (map[string]inter
                 "instId":  okxSymbol,
                 "tdMode":  "cross",
                 "side":    "sell",           // 卖出平仓
+                "posSide": "long",           // 仓位方向：平多仓 - OKX多空模式必须
                 "ordType": "market",
                 "sz":      strconv.FormatFloat(quantity, 'f', -1, 64),
         }
@@ -335,6 +339,7 @@ func (t *OKXTrader) CloseShort(symbol string, quantity float64) (map[string]inte
                 "instId":  okxSymbol,
                 "tdMode":  "cross",
                 "side":    "buy",            // 买入平仓
+                "posSide": "short",          // 仓位方向：平空仓 - OKX多空模式必须
                 "ordType": "market",
                 "sz":      strconv.FormatFloat(quantity, 'f', -1, 64),
         }
@@ -358,7 +363,7 @@ func (t *OKXTrader) placeOrder(order map[string]string) (map[string]interface{},
         return resp, nil
 }
 
-// SetLeverage 设置杠杆
+// SetLeverage 设置杠杆（多空模式下需要分别设置多头和空头杠杆）
 func (t *OKXTrader) SetLeverage(symbol string, leverage int) error {
         if leverage < 1 || leverage > 125 {
                 return fmt.Errorf("杠杆必须在1-125之间")
@@ -370,20 +375,34 @@ func (t *OKXTrader) SetLeverage(symbol string, leverage int) error {
                 okxSymbol = convertToOKXSymbol(symbol)
         }
 
-        params := map[string]string{
+        // OKX多空模式需要分别为多头和空头设置杠杆
+        endpoint := "/api/v5/account/set-leverage"
+        
+        // 设置多头杠杆
+        paramsLong := map[string]string{
                 "instId":  okxSymbol,
                 "lever":   strconv.Itoa(leverage),
                 "mgnMode": "cross",
+                "posSide": "long",
         }
-
-        // OKX API: POST /api/v5/account/set-leverage
-        endpoint := "/api/v5/account/set-leverage"
-        _, err := t.makeRequest("POST", endpoint, params)
+        _, err := t.makeRequest("POST", endpoint, paramsLong)
         if err != nil {
-                return fmt.Errorf("设置OKX杠杆失败: %w", err)
+                log.Printf("⚠️ 设置多头杠杆失败: %v", err)
         }
 
-        log.Printf("✅ OKX杠杆设置成功: symbol=%s, leverage=%d", okxSymbol, leverage)
+        // 设置空头杠杆
+        paramsShort := map[string]string{
+                "instId":  okxSymbol,
+                "lever":   strconv.Itoa(leverage),
+                "mgnMode": "cross",
+                "posSide": "short",
+        }
+        _, err = t.makeRequest("POST", endpoint, paramsShort)
+        if err != nil {
+                log.Printf("⚠️ 设置空头杠杆失败: %v", err)
+        }
+
+        log.Printf("✅ OKX杠杆设置成功: symbol=%s, leverage=%d (多头/空头)", okxSymbol, leverage)
         return nil
 }
 
@@ -448,8 +467,10 @@ func (t *OKXTrader) GetMarketPrice(symbol string) (float64, error) {
 // SetStopLoss 设置止损单
 func (t *OKXTrader) SetStopLoss(symbol string, positionSide string, quantity, stopPrice float64) error {
         side := "buy"
+        posSide := "short"
         if positionSide == "long" {
                 side = "sell"
+                posSide = "long"
         }
 
         // 转换交易对格式
@@ -459,6 +480,7 @@ func (t *OKXTrader) SetStopLoss(symbol string, positionSide string, quantity, st
                 "instId":  okxSymbol,
                 "tdMode":  "cross",
                 "side":    side,
+                "posSide": posSide,          // 仓位方向 - OKX多空模式必须
                 "ordType": "conditional",    // 条件单
                 "sz":      strconv.FormatFloat(quantity, 'f', -1, 64),
                 "tpTriggerPx": strconv.FormatFloat(stopPrice, 'f', -1, 64), // 触发价格
@@ -470,15 +492,17 @@ func (t *OKXTrader) SetStopLoss(symbol string, positionSide string, quantity, st
                 return fmt.Errorf("设置OKX止损失败: %w", err)
         }
 
-        log.Printf("✅ OKX止损设置成功: symbol=%s, side=%s, stopPrice=%f", okxSymbol, side, stopPrice)
+        log.Printf("✅ OKX止损设置成功: symbol=%s, posSide=%s, stopPrice=%f", okxSymbol, posSide, stopPrice)
         return nil
 }
 
 // SetTakeProfit 设置止盈单
 func (t *OKXTrader) SetTakeProfit(symbol string, positionSide string, quantity, takeProfitPrice float64) error {
         side := "buy"
+        posSide := "short"
         if positionSide == "long" {
                 side = "sell"
+                posSide = "long"
         }
 
         // 转换交易对格式
@@ -488,6 +512,7 @@ func (t *OKXTrader) SetTakeProfit(symbol string, positionSide string, quantity, 
                 "instId":  okxSymbol,
                 "tdMode":  "cross",
                 "side":    side,
+                "posSide": posSide,          // 仓位方向 - OKX多空模式必须
                 "ordType": "conditional",
                 "sz":      strconv.FormatFloat(quantity, 'f', -1, 64),
                 "tpTriggerPx": strconv.FormatFloat(takeProfitPrice, 'f', -1, 64),
@@ -499,7 +524,7 @@ func (t *OKXTrader) SetTakeProfit(symbol string, positionSide string, quantity, 
                 return fmt.Errorf("设置OKX止盈失败: %w", err)
         }
 
-        log.Printf("✅ OKX止盈设置成功: symbol=%s, side=%s, takeProfitPrice=%f", okxSymbol, side, takeProfitPrice)
+        log.Printf("✅ OKX止盈设置成功: symbol=%s, posSide=%s, takeProfitPrice=%f", okxSymbol, posSide, takeProfitPrice)
         return nil
 }
 
