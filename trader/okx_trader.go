@@ -821,18 +821,33 @@ func (t *OKXTrader) generateSignature(timestamp, method, requestPath, body strin
 func (t *OKXTrader) makeRequest(method, endpoint string, params map[string]string) (map[string]interface{}, error) {
         timestamp := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 
-        // 构建请求body
         var body string
-        if method == "POST" && len(params) > 0 {
+        var requestPath string = endpoint
+        var fullURL string = t.baseURL + endpoint
+
+        if method == "GET" && len(params) > 0 {
+                // GET请求：参数需要添加到URL查询字符串中
+                // 签名也需要包含完整的路径+查询字符串
+                queryParts := make([]string, 0, len(params))
+                for k, v := range params {
+                        queryParts = append(queryParts, k+"="+v)
+                }
+                queryString := strings.Join(queryParts, "&")
+                requestPath = endpoint + "?" + queryString
+                fullURL = t.baseURL + requestPath
+                log.Printf("📡 OKX GET请求: %s", requestPath)
+        } else if method == "POST" && len(params) > 0 {
+                // POST请求：参数放在body中
                 jsonBody, err := json.Marshal(params)
                 if err != nil {
                         return nil, fmt.Errorf("序列化请求参数失败: %w", err)
                 }
                 body = string(jsonBody)
+                log.Printf("📡 OKX POST请求: %s, body: %s", endpoint, body)
         }
 
-        // 生成签名
-        signature := t.generateSignature(timestamp, method, endpoint, body)
+        // 生成签名（使用完整的请求路径）
+        signature := t.generateSignature(timestamp, method, requestPath, body)
 
         // 构建请求
         var reqBody io.Reader
@@ -840,7 +855,7 @@ func (t *OKXTrader) makeRequest(method, endpoint string, params map[string]strin
                 reqBody = strings.NewReader(body)
         }
 
-        req, err := http.NewRequest(method, t.baseURL+endpoint, reqBody)
+        req, err := http.NewRequest(method, fullURL, reqBody)
         if err != nil {
                 return nil, fmt.Errorf("创建请求失败: %w", err)
         }
