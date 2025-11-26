@@ -1030,14 +1030,14 @@ func (d *Database) UpdateAIModel(userID, id string, enabled bool, apiKey, custom
         // 先尝试精确匹配 ID（新版逻辑，支持多个相同 provider 的模型）
         var existingID string
         err := d.queryRow(`
-                SELECT id FROM ai_models WHERE user_id = ? AND id = ? LIMIT 1
+                SELECT id FROM ai_models WHERE user_id = $1 AND id = $2 LIMIT 1
         `, userID, id).Scan(&existingID)
 
         if err == nil {
                 // 找到了现有配置（精确匹配 ID），更新它
                 _, err = d.exec(`
-                        UPDATE ai_models SET enabled = ?, api_key = ?, custom_api_url = ?, custom_model_name = ?, updated_at = datetime('now')
-                        WHERE id = ? AND user_id = ?
+                        UPDATE ai_models SET enabled = $1, api_key = $2, custom_api_url = $3, custom_model_name = $4, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $5 AND user_id = $6
                 `, enabled, apiKey, customAPIURL, customModelName, existingID, userID)
                 return err
         }
@@ -1045,7 +1045,7 @@ func (d *Database) UpdateAIModel(userID, id string, enabled bool, apiKey, custom
         // ID 不存在，尝试兼容旧逻辑：将 id 作为 provider 查找
         provider := id
         err = d.queryRow(`
-                SELECT id FROM ai_models WHERE user_id = ? AND provider = ? LIMIT 1
+                SELECT id FROM ai_models WHERE user_id = $1 AND provider = $2 LIMIT 1
         `, userID, provider).Scan(&existingID)
 
         if err == nil {
@@ -1076,7 +1076,7 @@ func (d *Database) UpdateAIModel(userID, id string, enabled bool, apiKey, custom
         // 获取模型的基本信息
         var name string
         err = d.queryRow(`
-                SELECT name FROM ai_models WHERE provider = ? LIMIT 1
+                SELECT name FROM ai_models WHERE provider = $1 LIMIT 1
         `, provider).Scan(&name)
         if err != nil {
                 // 如果找不到基本信息，使用默认值
@@ -1355,7 +1355,7 @@ func (d *Database) GetTraderConfig(userID, traderID string) (*TraderRecord, *AIM
 // GetSystemConfig 获取系统配置
 func (d *Database) GetSystemConfig(key string) (string, error) {
         var value string
-        err := d.queryRow(`SELECT value FROM system_config WHERE key = ?`, key).Scan(&value)
+        err := d.queryRow(`SELECT value FROM system_config WHERE key = $1`, key).Scan(&value)
         if err != nil {
                 if err == sql.ErrNoRows {
                         // 如果 key 不存在，返回空字符串和 nil 错误
@@ -1499,7 +1499,7 @@ func (d *Database) LoadBetaCodesFromFile(filePath string) error {
 // ValidateBetaCode 验证内测码是否有效且未使用
 func (d *Database) ValidateBetaCode(code string) (bool, error) {
         var used bool
-        err := d.queryRow(`SELECT used FROM beta_codes WHERE code = ?`, code).Scan(&used)
+        err := d.queryRow(`SELECT used FROM beta_codes WHERE code = $1`, code).Scan(&used)
         if err != nil {
                 if err == sql.ErrNoRows {
                         return false, nil // 内测码不存在
@@ -1738,7 +1738,7 @@ func (d *Database) MigrateUserBetaCodes() (int, error) {
 func (d *Database) GetUserBetaCode(userID string) (string, error) {
         var betaCode sql.NullString
         err := d.queryRow(`
-                SELECT beta_code FROM users WHERE id = ?
+                SELECT beta_code FROM users WHERE id = $1
         `, userID).Scan(&betaCode)
         if err != nil {
                 return "", err
