@@ -199,7 +199,8 @@ func (w *WSClient) handleReconnect() {
 		retryCount++
 		log.Printf("WebSocket尝试重新连接 (第 %d 次)...", retryCount)
 
-		if err := w.Connect(); err == nil {
+		err := w.Connect()
+		if err == nil {
 			log.Println("✅ WebSocket重连成功，开始恢复订阅...")
 			w.resubscribeAll()
 			return

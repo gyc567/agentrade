@@ -541,6 +541,16 @@ func (d *Database) alterTables() error {
 
 // initDefaultData 初始化默认数据
 func (d *Database) initDefaultData() error {
+	// 确保default系统用户存在（必须在初始化默认数据之前）
+	if err := d.EnsureDefaultUser(); err != nil {
+		return fmt.Errorf("创建default用户失败: %w", err)
+	}
+
+	// 确保admin用户存在（如果启用admin模式）
+	if err := d.EnsureAdminUser(); err != nil {
+		return fmt.Errorf("创建admin用户失败: %w", err)
+	}
+
         // 初始化AI模型（使用default用户）
         aiModels := []struct {
                 id, name, provider string
@@ -582,9 +592,9 @@ func (d *Database) initDefaultData() error {
                 var err error
                 if d.usingNeon {
                         _, err = d.exec(`
-                                INSERT INTO exchanges (id, user_id, name, type, enabled) 
+                                INSERT INTO exchanges (id, user_id, name, type, enabled)
                                 VALUES ($1, 'default', $2, $3, false)
-                                ON CONFLICT (id) DO NOTHING
+                                ON CONFLICT (id, user_id) DO NOTHING
                         `, exchange.id, exchange.name, exchange.typ)
                 } else {
                         _, err = d.exec(`
@@ -837,6 +847,39 @@ func (d *Database) CreateUser(user *User) error {
                 lockedUntil, user.FailedAttempts, lastFailedAt,
                 user.IsActive, user.IsAdmin, user.BetaCode, user.CreatedAt, user.UpdatedAt)
         return err
+}
+
+// EnsureDefaultUser 确保default系统用户存在（用于存储系统级别配置）
+func (d *Database) EnsureDefaultUser() error {
+	// 检查default用户是否已存在
+	var count int
+	err := d.queryRow(`SELECT COUNT(*) FROM users WHERE id = 'default'`).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// 如果已存在，直接返回
+	if count > 0 {
+		return nil
+	}
+
+	// 创建default用户（系统级别用户，用于存储系统默认配置）
+	now := time.Now()
+	defaultUser := &User{
+		ID:             "default",
+		Email:          "default@system",
+		PasswordHash:   "", // 系统用户不需要密码
+		OTPSecret:      "",
+		OTPVerified:    true,
+		IsActive:       true,
+		IsAdmin:        false, // 不是管理员，只是系统用户
+		FailedAttempts: 0,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+
+	log.Println("📝 创建default系统用户（用于存储系统级别配置）...")
+	return d.CreateUser(defaultUser)
 }
 
 // EnsureAdminUser 确保admin用户存在（用于管理员模式）

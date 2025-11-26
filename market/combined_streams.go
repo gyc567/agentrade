@@ -196,7 +196,8 @@ func (c *CombinedStreamsClient) handleReconnect() {
 		retryCount++
 		log.Printf("组合流尝试重新连接 (第 %d 次)...", retryCount)
 
-		if err := c.Connect(); err == nil {
+		err := c.Connect()
+		if err == nil {
 			log.Println("✅ 组合流重连成功，开始恢复订阅...")
 			c.resubscribeAll()
 			return
