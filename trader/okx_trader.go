@@ -298,6 +298,11 @@ func (t *OKXTrader) OpenLong(symbol string, quantity float64, leverage int) (map
         okxSymbol := convertToOKXSymbol(symbol)
         log.Printf("📊 OKX开多: 原始交易对=%s, OKX格式=%s, 币数量=%f, 杠杆=%d", symbol, okxSymbol, quantity, leverage)
 
+        // 确保账户处于多空模式（使用posSide参数需要）
+        if err := t.EnsureLongShortMode(); err != nil {
+                log.Printf("⚠️ 设置持仓模式失败: %v，继续尝试下单", err)
+        }
+
         // 设置杠杆（OKX要求先设置杠杆）
         if err := t.SetLeverage(okxSymbol, leverage); err != nil {
                 log.Printf("⚠️ 设置杠杆失败: %v", err)
@@ -330,6 +335,11 @@ func (t *OKXTrader) OpenShort(symbol string, quantity float64, leverage int) (ma
         // 转换交易对格式
         okxSymbol := convertToOKXSymbol(symbol)
         log.Printf("📊 OKX开空: 原始交易对=%s, OKX格式=%s, 币数量=%f, 杠杆=%d", symbol, okxSymbol, quantity, leverage)
+
+        // 确保账户处于多空模式（使用posSide参数需要）
+        if err := t.EnsureLongShortMode(); err != nil {
+                log.Printf("⚠️ 设置持仓模式失败: %v，继续尝试下单", err)
+        }
 
         // 设置杠杆（OKX要求先设置杠杆）
         if err := t.SetLeverage(okxSymbol, leverage); err != nil {
@@ -551,6 +561,66 @@ func (t *OKXTrader) SetMarginMode(symbol string, isCrossMargin bool) error {
 
         log.Printf("✅ OKX保证金模式设置成功: symbol=%s, mode=%s", okxSymbol, mgnMode)
         return nil
+}
+
+// GetAccountConfig 获取账户配置（包括持仓模式）
+func (t *OKXTrader) GetAccountConfig() (map[string]interface{}, error) {
+        endpoint := "/api/v5/account/config"
+        resp, err := t.makeRequest("GET", endpoint, nil)
+        if err != nil {
+                return nil, fmt.Errorf("获取OKX账户配置失败: %w", err)
+        }
+        
+        if data, ok := resp["data"].([]interface{}); ok && len(data) > 0 {
+                if config, ok := data[0].(map[string]interface{}); ok {
+                        posMode, _ := config["posMode"].(string)
+                        acctLv, _ := config["acctLv"].(string)
+                        log.Printf("📊 OKX账户配置: posMode=%s, acctLv=%s", posMode, acctLv)
+                        return config, nil
+                }
+        }
+        
+        return nil, fmt.Errorf("解析账户配置失败")
+}
+
+// SetPositionMode 设置持仓模式 (long_short_mode / net_mode)
+// OKX交易使用posSide参数需要账户处于long_short_mode
+func (t *OKXTrader) SetPositionMode(posMode string) error {
+        endpoint := "/api/v5/account/set-position-mode"
+        params := map[string]string{
+                "posMode": posMode,
+        }
+        
+        _, err := t.makeRequest("POST", endpoint, params)
+        if err != nil {
+                // 如果已经是目标模式，忽略错误
+                if strings.Contains(err.Error(), "already") {
+                        log.Printf("ℹ️ OKX持仓模式已经是: %s", posMode)
+                        return nil
+                }
+                return fmt.Errorf("设置OKX持仓模式失败: %w", err)
+        }
+        
+        log.Printf("✅ OKX持仓模式设置成功: %s", posMode)
+        return nil
+}
+
+// EnsureLongShortMode 确保账户处于多空模式（使用posSide参数需要）
+func (t *OKXTrader) EnsureLongShortMode() error {
+        config, err := t.GetAccountConfig()
+        if err != nil {
+                log.Printf("⚠️ 获取账户配置失败: %v，尝试直接设置持仓模式", err)
+                return t.SetPositionMode("long_short_mode")
+        }
+        
+        posMode, _ := config["posMode"].(string)
+        if posMode == "long_short_mode" {
+                log.Printf("✓ OKX账户已处于多空模式")
+                return nil
+        }
+        
+        log.Printf("⚠️ OKX账户当前是 %s 模式，需要切换到 long_short_mode", posMode)
+        return t.SetPositionMode("long_short_mode")
 }
 
 // GetMarketPrice 获取市场价格
