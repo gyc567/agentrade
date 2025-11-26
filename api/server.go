@@ -77,8 +77,12 @@ func corsMiddleware() gin.HandlerFunc {
                 "https://web-fco5upt1e-gyc567s-projects.vercel.app",
                 "https://web-2ybunmaej-gyc567s-projects.vercel.app",
                 "https://web-ge79k4nzy-gyc567s-projects.vercel.app",
-                // 新增生产前端域名
+                // 生产前端域名（含www和不含www）
                 "https://www.agentrade.xyz",
+                "https://agentrade.xyz",
+                
+                // Replit部署域名
+                "https://nofx-gyc567.replit.app",
         }
 
         // 如果设置了环境变量，使用环境变量中的值
@@ -101,18 +105,21 @@ func corsMiddleware() gin.HandlerFunc {
                         }
                 }
 
-                // 仅对白名单域名设置CORS头
+                // 对白名单域名设置CORS头（必须在任何响应之前设置）
                 if allowed {
                         c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
                         c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
                 }
-
-                c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                
+                // 始终设置这些头，确保预检请求和错误响应都包含CORS头
+                c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
                 c.Writer.Header().Set("Access-Control-Allow-Headers",
-                        "Content-Type, Authorization, Cache-Control, X-Requested-With, X-Requested-By, If-Modified-Since, Pragma")
+                        "Content-Type, Authorization, Cache-Control, X-Requested-With, X-Requested-By, If-Modified-Since, Pragma, Origin, Accept")
+                c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 
+                // 处理预检请求
                 if c.Request.Method == "OPTIONS" {
-                        c.AbortWithStatus(http.StatusOK)
+                        c.AbortWithStatus(http.StatusNoContent)
                         return
                 }
 
