@@ -20,7 +20,8 @@ import (
 
 // Database 配置数据库
 type Database struct {
-        db *sql.DB
+        db       *sql.DB
+        isSQLite bool  // 是否使用SQLite
 }
 
 // NewDatabase 创建配置数据库（优先PostgreSQL，开发环境回退SQLite）
@@ -42,7 +43,7 @@ func NewDatabase(dbPath string) (*Database, error) {
 
                 log.Println("✅ 成功连接PostgreSQL数据库!")
 
-                database := &Database{db: db}
+                database := &Database{db: db, isSQLite: false}
                 if err := database.createTables(); err != nil {
                         return nil, fmt.Errorf("创建表失败: %w", err)
                 }
@@ -67,7 +68,7 @@ func NewDatabase(dbPath string) (*Database, error) {
                 return nil, fmt.Errorf("打开数据库失败: %w", err)
         }
 
-        database := &Database{db: db}
+        database := &Database{db: db, isSQLite: true}
         if err := database.createTablesSQLite(); err != nil {
                 return nil, fmt.Errorf("创建表失败: %w", err)
         }
@@ -112,15 +113,9 @@ func (d *Database) exec(query string, args ...interface{}) (sql.Result, error) {
 
 // createTables 创建数据库表
 func (d *Database) createTables() error {
-        // 检查数据库类型（通过查询表结构）
-        var tableName string
-        err := d.db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1").Scan(&tableName)
-        if err == nil {
-                // 是SQLite
+        if d.isSQLite {
                 return d.createTablesSQLite()
         }
-
-        // 是PostgreSQL
         return d.createTablesPostgres()
 }
 
