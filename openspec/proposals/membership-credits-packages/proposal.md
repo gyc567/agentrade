@@ -16,6 +16,7 @@
 3. **用户积分展示**: 用户信息页面显示积分余额
 4. **高内聚低耦合**: 不影响现有功能
 5. **100%测试覆盖**: 所有新增代码需要单元测试
+6. **安全审计**: 所有敏感操作记录审计日志（架构审查新增）
 
 ---
 
@@ -114,6 +115,8 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id ON credit_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_created_at ON credit_transactions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_type ON credit_transactions(type);
+-- 复合索引：优化用户流水分页查询（架构审查新增）
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_created ON credit_transactions(user_id, created_at DESC);
 ```
 
 ### 初始数据
@@ -303,7 +306,7 @@ type CreditService interface {
     GetUserCredits(ctx context.Context, userID string) (*UserCredits, error)
     AddCredits(ctx context.Context, userID string, amount int, category, description, refID string) error
     DeductCredits(ctx context.Context, userID string, amount int, category, description, refID string) error
-    HasEnoughCredits(ctx context.Context, userID string, amount int) (bool, error)
+    HasEnoughCredits(ctx context.Context, userID string, amount int) bool  // 改为仅返回 bool（架构审查优化）
 
     // 流水
     GetUserTransactions(ctx context.Context, userID string, page, limit int) ([]CreditTransaction, int, error)
@@ -312,9 +315,104 @@ type CreditService interface {
     CreatePackage(ctx context.Context, pkg *CreditPackage) error
     UpdatePackage(ctx context.Context, pkg *CreditPackage) error
     DeletePackage(ctx context.Context, id string) error
-    AdjustUserCredits(ctx context.Context, userID string, amount int, reason string) error
+    AdjustUserCredits(ctx context.Context, adminID, userID string, amount int, reason string) error  // 添加 adminID 用于审计
 }
 ```
+
+---
+
+## 安全设计（架构审查新增）
+
+### 输入验证
+
+所有 API 端点必须进行参数验证：
+
+```go
+// handler.go - 输入验证示例
+func (h *CreditHandler) AdjustCredits(w http.ResponseWriter, r *http.Request) {
+    var req AdjustCreditsRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "无效的请求格式", http.StatusBadRequest)
+        return
+    }
+
+    // 参数验证
+    if req.Amount == 0 {
+        http.Error(w, "积分数量不能为0", http.StatusBadRequest)
+        return
+    }
+    if len(req.Reason) < 2 || len(req.Reason) > 200 {
+        http.Error(w, "调整原因长度必须在2-200字符之间", http.StatusBadRequest)
+        return
+    }
+
+    // ... 后续逻辑
+}
+```
+
+### 频率限制（防刷机制）
+
+```go
+// middleware/rate_limit.go
+type RateLimitConfig struct {
+    // 积分操作频率限制
+    CreditOperations: RateLimit{
+        Window:   time.Minute,
+        MaxCount: 10,  // 每分钟最多10次积分操作
+    },
+    // 管理员操作频率限制
+    AdminOperations: RateLimit{
+        Window:   time.Minute,
+        MaxCount: 30,
+    },
+}
+
+// 应用到路由
+router.Use(rateLimiter.Middleware("credit_ops", config.CreditOperations))
+```
+
+### 审计日志
+
+管理员敏感操作必须记录到 `audit_logs` 表：
+
+```go
+// service.go - AdjustUserCredits 实现
+func (s *CreditService) AdjustUserCredits(ctx context.Context, adminID, userID string, amount int, reason string) error {
+    // 1. 执行积分调整
+    if err := s.adjustCreditsInternal(ctx, userID, amount, reason); err != nil {
+        // 记录失败审计
+        s.auditRepo.Create(ctx, &AuditLog{
+            UserID:    adminID,
+            Action:    "admin_adjust_credits",
+            IPAddress: getClientIP(ctx),
+            Success:   false,
+            Details:   fmt.Sprintf("目标用户:%s, 金额:%+d, 原因:%s, 错误:%v", userID, amount, reason, err),
+        })
+        return err
+    }
+
+    // 2. 记录成功审计
+    s.auditRepo.Create(ctx, &AuditLog{
+        UserID:    adminID,
+        Action:    "admin_adjust_credits",
+        IPAddress: getClientIP(ctx),
+        Success:   true,
+        Details:   fmt.Sprintf("目标用户:%s, 金额:%+d, 原因:%s", userID, amount, reason),
+    })
+
+    return nil
+}
+```
+
+### 安全验收标准
+
+| 检查项 | 要求 |
+|--------|------|
+| 输入验证 | 所有 API 端点必须验证参数 |
+| 频率限制 | 积分操作每分钟不超过10次 |
+| 审计日志 | 管理员操作100%记录 |
+| SQL 注入 | 使用参数化查询 |
+| 权限控制 | 用户只能操作自己的积分 |
 
 ---
 
@@ -391,6 +489,22 @@ func TestHasEnoughCredits(t *testing.T) {
 func TestConcurrentDeduction(t *testing.T) {
     // 测试：并发扣减
     // 验证：100并发扣减不会出现数据不一致
+}
+
+// 架构审查新增测试用例
+func TestDeductCredits_ZeroBalance(t *testing.T) {
+    // 测试：余额为0时扣减
+    // 预期：返回余额不足错误
+}
+
+func TestAddCredits_DatabaseError(t *testing.T) {
+    // 测试：数据库连接失败
+    // 预期：返回错误，不产生脏数据
+}
+
+func TestAdjustCredits_AuditLog(t *testing.T) {
+    // 测试：管理员调整积分
+    // 验证：audit_logs 表正确记录
 }
 ```
 
@@ -506,6 +620,8 @@ func TestAdjustCreditsHandler(t *testing.T) {
 | 并发积分操作数据不一致 | 中 | 高 | 使用数据库事务 + 行级锁 |
 | 现有功能受影响 | 低 | 高 | 独立模块设计 + 充分测试 |
 | 迁移脚本执行失败 | 低 | 中 | 提供回滚脚本 + 分步执行 |
+| 安全漏洞被利用 | 低 | 高 | 输入验证 + 频率限制 + 审计日志（架构审查新增） |
+| 自动创建积分记录竞态 | 低 | 中 | 使用 UPSERT + ON CONFLICT（架构审查新增） |
 
 ---
 

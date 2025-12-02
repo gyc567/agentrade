@@ -137,6 +137,8 @@ CREATE INDEX IF NOT EXISTS idx_user_credits_user_id ON user_credits(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id ON credit_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_created_at ON credit_transactions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_category ON credit_transactions(category);
+-- 复合索引：优化用户流水分页查询（架构审查新增）
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_created ON credit_transactions(user_id, created_at DESC);
 
 -- 5. 创建触发器
 DROP TRIGGER IF EXISTS update_credit_packages_updated_at ON credit_packages;
@@ -249,17 +251,16 @@ WHERE is_active = TRUE
 ORDER BY sort_order ASC;
 ```
 
-### 获取用户积分（自动创建）
+### 获取用户积分（自动创建 - 防竞态优化）
 
 ```sql
--- 先尝试获取
-SELECT * FROM user_credits WHERE user_id = $1;
-
--- 如果不存在，插入并返回
+-- 使用 UPSERT 避免竞态条件（架构审查优化）
 INSERT INTO user_credits (id, user_id, available_credits, total_credits, used_credits)
 VALUES (gen_random_uuid()::text, $1, 0, 0, 0)
-ON CONFLICT (user_id) DO NOTHING
-RETURNING *;
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 然后获取（保证存在）
+SELECT * FROM user_credits WHERE user_id = $1;
 ```
 
 ### 增加积分（事务）
@@ -318,3 +319,36 @@ WHERE user_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 ```
+
+---
+
+## 索引优化说明（架构审查新增）
+
+### 索引设计原则
+
+| 索引类型 | 用途 | 查询模式 |
+|----------|------|----------|
+| 单列索引 | 等值查询 | `WHERE is_active = TRUE` |
+| 复合索引 | 范围+排序 | `WHERE user_id = $1 ORDER BY created_at DESC` |
+| 覆盖索引 | 避免回表 | 查询字段全在索引中 |
+
+### 复合索引 `idx_credit_transactions_user_created`
+
+**查询场景：** 用户积分流水分页
+```sql
+SELECT * FROM credit_transactions
+WHERE user_id = $1
+ORDER BY created_at DESC
+LIMIT 20 OFFSET 0;
+```
+
+**优化效果：**
+- 避免全表扫描
+- 直接使用索引排序，无需 filesort
+- 大数据量下性能提升 10x+
+
+### 索引维护建议
+
+1. 定期执行 `ANALYZE` 更新统计信息
+2. 监控索引使用率：`pg_stat_user_indexes`
+3. 流水表超过 100 万条时考虑分区

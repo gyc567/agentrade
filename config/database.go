@@ -321,6 +321,47 @@ func (d *Database) createTablesPostgres() error {
                         used_at TIMESTAMP DEFAULT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )`,
+
+                // 积分套餐表
+                `CREATE TABLE IF NOT EXISTS credit_packages (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        name_en TEXT NOT NULL,
+                        description TEXT DEFAULT '',
+                        price_usdt REAL NOT NULL,
+                        credits INTEGER NOT NULL,
+                        bonus_credits INTEGER DEFAULT 0,
+                        is_active BOOLEAN DEFAULT true,
+                        is_recommended BOOLEAN DEFAULT false,
+                        sort_order INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )`,
+
+                // 用户积分账户表
+                `CREATE TABLE IF NOT EXISTS user_credits (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL UNIQUE,
+                        available_credits INTEGER DEFAULT 0,
+                        total_credits INTEGER DEFAULT 0,
+                        used_credits INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )`,
+
+                // 积分流水表
+                `CREATE TABLE IF NOT EXISTS credit_transactions (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        type TEXT NOT NULL, -- credit/debit
+                        amount INTEGER NOT NULL,
+                        balance_before INTEGER NOT NULL,
+                        balance_after INTEGER NOT NULL,
+                        category TEXT NOT NULL, -- purchase/consume/gift/refund/admin
+                        description TEXT NOT NULL,
+                        reference_id TEXT DEFAULT '',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )`,
         }
 
         for _, query := range queries {
@@ -477,6 +518,80 @@ func (d *Database) initDefaultData() error {
                 `, key, value)
                 if err != nil {
                         return fmt.Errorf("初始化系统配置失败: %w", err)
+                }
+        }
+
+        // 初始化默认积分套餐
+        creditPackages := []struct {
+                id, name, nameEn, description string
+                priceUSDT                     float64
+                credits, bonusCredits         int
+                isActive, isRecommended       bool
+                sortOrder                     int
+        }{
+                {
+                        id:              "basic_100",
+                        name:            "基础套餐",
+                        nameEn:          "Basic Package",
+                        description:     "100积分，AI交易入门首选",
+                        priceUSDT:       9.99,
+                        credits:         100,
+                        bonusCredits:    0,
+                        isActive:        true,
+                        isRecommended:   false,
+                        sortOrder:       1,
+                },
+                {
+                        id:              "standard_500",
+                        name:            "标准套餐",
+                        nameEn:          "Standard Package",
+                        description:     "500积分 + 50积分赠送，推荐选择",
+                        priceUSDT:       39.99,
+                        credits:         500,
+                        bonusCredits:    50,
+                        isActive:        true,
+                        isRecommended:   true,
+                        sortOrder:       2,
+                },
+                {
+                        id:              "premium_1200",
+                        name:            "高级套餐",
+                        nameEn:          "Premium Package",
+                        description:     "1200积分 + 200积分赠送，优惠更多",
+                        priceUSDT:       79.99,
+                        credits:         1200,
+                        bonusCredits:    200,
+                        isActive:        true,
+                        isRecommended:   false,
+                        sortOrder:       3,
+                },
+                {
+                        id:              "enterprise_3000",
+                        name:            "企业套餐",
+                        nameEn:          "Enterprise Package",
+                        description:     "3000积分 + 600积分赠送，大额优惠",
+                        priceUSDT:       199.99,
+                        credits:         3000,
+                        bonusCredits:    600,
+                        isActive:        true,
+                        isRecommended:   false,
+                        sortOrder:       4,
+                },
+        }
+
+        for _, pkg := range creditPackages {
+                now := time.Now()
+                _, err := d.exec(`
+                        INSERT INTO credit_packages
+                        (id, name, name_en, description, price_usdt, credits, bonus_credits,
+                         is_active, is_recommended, sort_order, created_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                        ON CONFLICT (id) DO NOTHING
+                `, pkg.id, pkg.name, pkg.nameEn, pkg.description, pkg.priceUSDT,
+                        pkg.credits, pkg.bonusCredits, pkg.isActive, pkg.isRecommended,
+                        pkg.sortOrder, now, now)
+                if err != nil {
+                        return fmt.Errorf("初始化积分套餐失败: %w", err)
                 }
         }
 

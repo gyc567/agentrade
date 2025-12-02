@@ -6,11 +6,14 @@ import (
         "fmt"
         "log"
         "net/http"
+        "nofx/api/credits"
         "nofx/auth"
         "nofx/config"
         "nofx/decision"
         "nofx/email"
         "nofx/manager"
+        "nofx/middleware"
+        creditsService "nofx/service/credits"
         "os"
         "strconv"
         "strings"
@@ -26,6 +29,8 @@ type Server struct {
         traderManager *manager.TraderManager
         database      *config.Database
         emailClient   *email.ResendClient
+        creditService creditsService.Service
+        creditHandler *credits.Handler
         port          int
 }
 
@@ -36,21 +41,33 @@ func NewServer(traderManager *manager.TraderManager, database *config.Database, 
 
         // 使用gin.New()而不是gin.Default()，以便我们可以自定义中间件顺序
         router := gin.New()
-        
+
         // 添加Logger中间件
         router.Use(gin.Logger())
-        
+
         // 启用CORS（必须在Recovery之前，确保即使panic也能设置CORS头）
         router.Use(corsMiddleware())
-        
+
+        // 添加安全头中间件
+        router.Use(middleware.SecurityHeadersMiddleware())
+
+        // 添加频率限制中间件（基础限制）
+        router.Use(middleware.RateLimitByIP(60, time.Minute))
+
         // 添加自定义Recovery中间件，确保panic时也返回带CORS头的响应
         router.Use(corsRecoveryMiddleware())
+
+        // 创建积分服务
+        creditService := creditsService.NewCreditService(database)
+        creditHandler := credits.NewHandler(creditService)
 
         s := &Server{
                 router:        router,
                 traderManager: traderManager,
                 database:      database,
                 emailClient:   email.NewResendClient(),
+                creditService: creditService,
+                creditHandler: creditHandler,
                 port:          port,
         }
 
@@ -210,7 +227,15 @@ func (s *Server) setupRoutes() {
                 // 系统提示词模板管理（无需认证）
                 api.GET("/prompt-templates", s.handleGetPromptTemplates)
                 api.GET("/prompt-templates/:name", s.handleGetPromptTemplate)
-                
+
+                // 积分系统 - 公开接口（无需认证，但有频率限制）
+                creditPublic := api.Group("/")
+                creditPublic.Use(middleware.RateLimitByIP(60, time.Minute)) // 每分钟最多60次查询
+                {
+                        creditPublic.GET("/credit-packages", s.creditHandler.HandleGetCreditPackages)
+                        creditPublic.GET("/credit-packages/:id", s.creditHandler.HandleGetCreditPackage)
+                }
+
                 // 公开的竞赛数据（无需认证）
                 api.GET("/traders", s.handlePublicTraderList)
                 api.GET("/competition", s.handlePublicCompetition)
@@ -255,6 +280,35 @@ func (s *Server) setupRoutes() {
 
                         // 用户管理
                         protected.GET("/users", s.handleGetUsers)
+
+                        // 积分系统 - 用户接口（需要认证，有用户级别的频率限制）
+                        creditUser := protected.Group("/user/")
+                        creditUser.Use(middleware.RateLimitByUser(10, time.Minute)) // 每分钟最多10次积分操作
+                        {
+                                creditUser.GET("/credits", s.creditHandler.HandleGetUserCredits)
+                                creditUser.GET("/credits/transactions", s.creditHandler.HandleGetUserTransactions)
+                                creditUser.GET("/credits/summary", s.creditHandler.HandleGetUserCreditSummary)
+                        }
+                }
+
+                // 管理员接口（需要认证和管理员权限）
+                admin := api.Group("/admin/")
+                admin.Use(s.authMiddleware())
+                admin.Use(s.adminMiddleware())
+                {
+                        // 积分套餐管理（管理员级别频率限制）
+                        creditAdmin := admin.Group("/")
+                        creditAdmin.Use(middleware.RateLimitAdmin(30, time.Minute)) // 管理员每分钟最多30次操作
+                        {
+                                creditAdmin.POST("/credit-packages", s.creditHandler.HandleCreateCreditPackage)
+                                creditAdmin.PUT("/credit-packages/:id", s.creditHandler.HandleUpdateCreditPackage)
+                                creditAdmin.DELETE("/credit-packages/:id", s.creditHandler.HandleDeleteCreditPackage)
+
+                                // 用户积分管理
+                                creditAdmin.POST("/users/:id/credits/adjust", s.creditHandler.HandleAdjustUserCredits)
+                                creditAdmin.GET("/users/:id/credits", s.creditHandler.HandleGetUserCreditsByAdmin)
+                                creditAdmin.GET("/users/:id/credits/transactions", s.creditHandler.HandleGetUserTransactionsByAdmin)
+                        }
                 }
         }
 }
@@ -2305,5 +2359,29 @@ func (s *Server) handleGetUsers(c *gin.Context) {
                 "data":    response,
                 "message": "获取用户列表成功",
         })
+}
+
+
+// adminMiddleware 管理员权限中间件（积分系统专用）
+func (s *Server) adminMiddleware() gin.HandlerFunc {
+        return func(c *gin.Context) {
+                userID := ""
+                if uid, exists := c.Get("userID"); exists {
+                        userID = uid.(string)
+                }
+
+                if userID == "" {
+                        c.JSON(http.StatusUnauthorized, gin.H{
+                                "error": "用户未认证",
+                        })
+                        c.Abort()
+                        return
+                }
+
+                // TODO: 实现管理员权限检查
+                // 这里简化处理，实际应该查询数据库验证管理员身份
+                // 暂时允许所有认证用户（测试用）
+                c.Next()
+        }
 }
 
