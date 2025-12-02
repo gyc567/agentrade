@@ -23,26 +23,31 @@ export const translations = {
     userProfile: 'User Profile',
 
     // User Profile
-    userProfileSubtitle: 'View your account information and credits',
-    basicInfo: 'Basic Information',
-    accountOverview: 'Account Overview',
+    profile: {
+      userInfo: 'User Information',
+      userProfileSubtitle: 'View your account information and credits',
+      basicInfo: 'Basic Information',
+      accountOverview: 'Account Overview',
+      creditSystem: 'Credit System',
+      creditsComingSoon: 'Credit system is coming soon!',
+      stayTuned: 'Stay tuned for updates',
+      traderOverview: 'Traders Overview',
+      profile_email: 'Email',
+      memberSince: 'Member Since',
+      lastLogin: 'Last Login',
+      profile_back: 'Back',
+      retry: 'Retry',
+      profile_error: 'Failed to get user information',
+      total: 'Total',
+      dailyPnl: 'Daily P&L',
+      totalTraders: 'Total Traders',
+      activeTraders: 'Active Traders',
+      totalPositions: 'Total Positions',
+    },
     credits: 'Credits',
     availableCredits: 'Available Credits',
     usedCredits: 'Used Credits',
     totalTransactions: 'Total Transactions',
-    email: 'Email',
-    memberSince: 'Member Since',
-    lastLogin: 'Last Login',
-    back: 'Back',
-    retry: 'Retry',
-    loggedInAs: 'Logged in as',
-    exitLogin: 'Exit Login',
-    total: 'Total',
-    dailyPnl: 'Daily P&L',
-    tradersOverview: 'Traders Overview',
-    totalTraders: 'Total Traders',
-    activeTraders: 'Active Traders',
-    totalPositions: 'Total Positions',
 
     // Footer
     footerTitle: 'Agent Trade - AI Trading System',
@@ -500,26 +505,31 @@ export const translations = {
     footerWarning: '⚠️ 交易有风险，请谨慎使用。',
 
     // User Profile
-    userProfileSubtitle: '查看您的账户信息和积分',
-    basicInfo: '基本信息',
-    accountOverview: '账户概览',
+    profile: {
+      userInfo: '用户信息',
+      userProfileSubtitle: '查看您的账户信息和积分',
+      basicInfo: '基本信息',
+      accountOverview: '账户概览',
+      creditSystem: '积分系统',
+      creditsComingSoon: '积分系统即将上线！',
+      stayTuned: '敬请期待更新',
+      traderOverview: '交易员概览',
+      profile_email: '邮箱',
+      memberSince: '注册时间',
+      lastLogin: '最后登录',
+      profile_back: '返回',
+      retry: '重试',
+      profile_error: '获取用户信息失败',
+      total: '总计',
+      dailyPnl: '日收益',
+      totalTraders: '总交易员数',
+      activeTraders: '活跃交易员',
+      totalPositions: '总持仓数',
+    },
     credits: '积分',
     availableCredits: '可用积分',
     usedCredits: '已用积分',
     totalTransactions: '总交易数',
-    email: '邮箱',
-    memberSince: '注册时间',
-    lastLogin: '最后登录',
-    back: '返回',
-    retry: '重试',
-    loggedInAs: '登录用户',
-    exitLogin: '退出登录',
-    total: '总计',
-    dailyPnl: '日收益',
-    tradersOverview: '交易员概览',
-    totalTraders: '总交易员数',
-    activeTraders: '活跃交易员',
-    totalPositions: '总持仓数',
 
     // Stats Cards
     totalEquity: '总净值',
@@ -950,12 +960,45 @@ export const translations = {
 };
 
 export function t(key: string, lang: Language, params?: Record<string, string | number>): string {
-  let text = translations[lang][key as keyof typeof translations['en']] || key;
+  // Parse nested key paths (e.g., "profile.userInfo" -> ["profile", "userInfo"])
+  const keys = key.split('.');
+
+  // Navigate through nested object structure
+  let value: any = translations[lang];
+  for (const k of keys) {
+    if (value && typeof value === 'object' && value !== null && k in value) {
+      value = value[k as keyof typeof value];
+    } else {
+      // Key not found - return a readable fallback
+      console.warn(`⚠️  Translation key not found: ${key} in ${lang}`);
+      const lastPart = keys[keys.length - 1];
+      // Convert camelCase to readable text
+      const readable = lastPart
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/_/g, ' ')
+        .replace(/^./, (str) => str.toUpperCase())
+        .trim();
+      return `[${readable}]`;
+    }
+  }
+
+  // Ensure value is a string
+  if (typeof value !== 'string') {
+    console.error(`❌ Translation value is not string for key: ${key}`, value);
+    const lastPart = keys[keys.length - 1];
+    const readable = lastPart
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+    return `[${readable}]`;
+  }
 
   // Replace parameters like {count}, {gap}, etc.
+  let text = value;
   if (params) {
-    Object.entries(params).forEach(([param, value]) => {
-      text = text.replace(`{${param}}`, String(value));
+    Object.entries(params).forEach(([param, val]) => {
+      text = text.replace(new RegExp(`{${param}}`, 'g'), String(val));
     });
   }
 

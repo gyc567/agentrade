@@ -1,6 +1,8 @@
 import React from 'react';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { t } from '../i18n/translations';
 
 /**
  * 用户详情页面组件
@@ -18,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
   const { userProfile, loading, error, refetch } = useUserProfile();
+  const { language } = useLanguage();
 
   // 渲染加载状态
   if (loading) {
@@ -41,13 +44,13 @@ const UserProfilePage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">获取用户信息失败</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('profile.profile_error', language) || '获取用户信息失败'}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
             <button
               onClick={refetch}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
             >
-              重试
+              {t('profile.retry', language)}
             </button>
           </div>
         </div>
@@ -63,10 +66,10 @@ const UserProfilePage: React.FC = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              用户信息
+              {t('profile.userInfo', language)}
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              查看您的账户信息和积分
+              {t('profile.userProfileSubtitle', language)}
             </p>
           </div>
           <button
@@ -76,7 +79,7 @@ const UserProfilePage: React.FC = () => {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            返回
+            {t('profile.profile_back', language)}
           </button>
         </div>
 
@@ -86,20 +89,20 @@ const UserProfilePage: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                基本信息
+                {t('profile.basicInfo', language)}
               </h3>
 
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    邮箱
+                    {t('profile.profile_email', language)}
                   </label>
                   <p className="mt-1 text-gray-900 dark:text-white">{user?.email}</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    注册时间
+                    {t('profile.memberSince', language)}
                   </label>
                   <p className="mt-1 text-gray-900 dark:text-white">
                     {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : '-'}
@@ -108,7 +111,7 @@ const UserProfilePage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    最后登录
+                    {t('profile.lastLogin', language)}
                   </label>
                   <p className="mt-1 text-gray-900 dark:text-white">
                     {userProfile?.last_login_at ? new Date(userProfile.last_login_at).toLocaleString() : '-'}
@@ -122,7 +125,7 @@ const UserProfilePage: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                账户概览
+                {t('profile.accountOverview', language)}
               </h3>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -174,17 +177,17 @@ const UserProfilePage: React.FC = () => {
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                积分系统
+                {t('profile.creditSystem', language)}
               </h3>
 
               <div className="text-center py-8">
                 <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                   🎯
                 </div>                <p className="text-gray-600 dark:text-gray-400">
-                  积分系统即将上线
+                  {t('profile.creditsComingSoon', language)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  敬请期待更多功能
+                  {t('profile.stayTuned', language)}
                 </p>
               </div>
             </div>
@@ -196,7 +199,7 @@ const UserProfilePage: React.FC = () => {
           <div className="mt-8">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                交易员概览
+                {t('profile.traderOverview', language)}
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
