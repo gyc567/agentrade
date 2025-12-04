@@ -157,6 +157,10 @@ export function useUserProfile(): UserProfileState {
  * - 消除边界情况：所有场景使用真实API
  * - 简洁执念：只返回必要字段
  * - 实用主义：显示真实数据而非假数据
+ *
+ * Bug修复: API路径不匹配问题
+ * 原问题: 前端调用 /api/v1/user/credits (404)
+ * 解决方案: 适配后端路由 /api/user/credits
  */
 export function useUserCredits() {
   const { token } = useAuth();
@@ -166,9 +170,11 @@ export function useUserCredits() {
     async () => {
       try {
         // 调用真实的积分系统API
-        // API: GET /api/v1/user/credits
+        // Bug修复: 移除v1版本号，适配后端路由
+        // 后端路由: /api/user/credits (无v1版本号)
+        // API: GET /api/user/credits
         // 返回: { available_credits, total_credits, used_credits }
-        const response = await fetch('/api/v1/user/credits', {
+        const response = await fetch('/api/user/credits', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -177,7 +183,11 @@ export function useUserCredits() {
         });
 
         if (!response.ok) {
-          throw new Error(`获取积分数据失败: ${response.status}`);
+          // 改进错误处理，显示真实错误信息
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error || `HTTP ${response.status}`;
+          console.error('获取积分数据失败:', errorMsg);
+          throw new Error(`获取积分数据失败: ${errorMsg}`);
         }
 
         const result = await response.json();
@@ -187,28 +197,36 @@ export function useUserCredits() {
           throw new Error('API响应格式错误');
         }
 
+        // 验证数据完整性
+        const credits = result.data;
+        if (typeof credits.available_credits !== 'number' ||
+            typeof credits.total_credits !== 'number' ||
+            typeof credits.used_credits !== 'number') {
+          throw new Error('积分数据格式错误');
+        }
+
         // 返回真实数据（只返回必要字段，遵循简洁原则）
         return {
-          available_credits: result.data.available_credits || 0,
-          total_credits: result.data.total_credits || 0,
-          used_credits: result.data.used_credits || 0
+          available_credits: credits.available_credits,
+          total_credits: credits.total_credits,
+          used_credits: credits.used_credits
           // 注意：不返回 transaction_count 字段（用户不需要此信息）
         };
       } catch (error) {
         console.error('获取积分数据失败:', error);
 
-        // 返回0而不是假数据（实用主义：诚实的数据）
-        return {
-          available_credits: 0,
-          total_credits: 0,
-          used_credits: 0
-        };
+        // 改进错误处理：不返回假数据0，而是抛出错误
+        // 让UI可以显示"加载失败"而不是"0积分"
+        // 这遵循实用主义原则：显示真实状态
+        throw error;
       }
     },
     {
       refreshInterval: 30000, // 30秒刷新
       revalidateOnFocus: false,
       // 错误重试策略
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
       onError: (err) => {
         console.error('用户积分数据加载失败:', err);
       }
