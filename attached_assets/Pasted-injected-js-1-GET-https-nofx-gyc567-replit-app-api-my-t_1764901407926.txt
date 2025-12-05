@@ -1,0 +1,140 @@
+injected.js:1  GET https://nofx-gyc567.replit.app/api/my-traders 500 (Internal Server Error)
+value @ injected.js:1
+getTraders @ index-DK0DTEdI.js:2
+（匿名） @ UserProfilePage-tsX4Z3gA.js:1
+（匿名） @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+al @ react-vendor-Dvwkxfce.js:32
+na @ react-vendor-Dvwkxfce.js:32
+bs @ react-vendor-Dvwkxfce.js:32
+rc @ react-vendor-Dvwkxfce.js:32
+sc @ react-vendor-Dvwkxfce.js:32
+nn @ react-vendor-Dvwkxfce.js:32
+la @ react-vendor-Dvwkxfce.js:32
+Ot @ react-vendor-Dvwkxfce.js:30
+（匿名） @ react-vendor-Dvwkxfce.js:32
+UserProfilePage-tsX4Z3gA.js:1 获取用户资料失败: Error: 获取交易员列表失败: pq: bind message has 19 result formats but query has 1 columns
+    at Object.getTraders (index-DK0DTEdI.js:2:3454)
+    at async Promise.all (index 1)
+    at async UserProfilePage-tsX4Z3gA.js:1:460
+    at async state-vendor-C9HKGFpL.js:9:8483
+（匿名） @ UserProfilePage-tsX4Z3gA.js:1
+await in （匿名）
+（匿名） @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+al @ react-vendor-Dvwkxfce.js:32
+na @ react-vendor-Dvwkxfce.js:32
+bs @ react-vendor-Dvwkxfce.js:32
+rc @ react-vendor-Dvwkxfce.js:32
+sc @ react-vendor-Dvwkxfce.js:32
+nn @ react-vendor-Dvwkxfce.js:32
+la @ react-vendor-Dvwkxfce.js:32
+Ot @ react-vendor-Dvwkxfce.js:30
+（匿名） @ react-vendor-Dvwkxfce.js:32
+UserProfilePage-tsX4Z3gA.js:1 用户资料数据获取失败: Error: 获取交易员列表失败: pq: bind message has 19 result formats but query has 1 columns
+    at Object.getTraders (index-DK0DTEdI.js:2:3454)
+    at async Promise.all (index 1)
+    at async UserProfilePage-tsX4Z3gA.js:1:460
+    at async state-vendor-C9HKGFpL.js:9:8483
+onError @ UserProfilePage-tsX4Z3gA.js:1
+（匿名） @ state-vendor-C9HKGFpL.js:9
+await in （匿名）
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+al @ react-vendor-Dvwkxfce.js:32
+na @ react-vendor-Dvwkxfce.js:32
+bs @ react-vendor-Dvwkxfce.js:32
+rc @ react-vendor-Dvwkxfce.js:32
+sc @ react-vendor-Dvwkxfce.js:32
+nn @ react-vendor-Dvwkxfce.js:32
+la @ react-vendor-Dvwkxfce.js:32
+Ot @ react-vendor-Dvwkxfce.js:30
+（匿名） @ react-vendor-Dvwkxfce.js:32
+injected.js:1  GET https://nofx-gyc567.replit.app/api/account?trader_id=okx_68003b68-2f1d-4618-8124-e93e4a86200a_deepseek_1764126087 401 (Unauthorized)
+value @ injected.js:1
+getAccount @ index-DK0DTEdI.js:2
+Ta.Y.refreshInterval @ index-DK0DTEdI.js:82
+（匿名） @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+al @ react-vendor-Dvwkxfce.js:32
+ea @ react-vendor-Dvwkxfce.js:32
+bs @ react-vendor-Dvwkxfce.js:32
+rc @ react-vendor-Dvwkxfce.js:32
+sc @ react-vendor-Dvwkxfce.js:32
+nn @ react-vendor-Dvwkxfce.js:32
+ra @ react-vendor-Dvwkxfce.js:32
+Ge @ react-vendor-Dvwkxfce.js:17
+ut @ react-vendor-Dvwkxfce.js:17
+index-DK0DTEdI.js:2 Token无效或已过期: 
+getAccount @ index-DK0DTEdI.js:2
+await in getAccount
+Ta.Y.refreshInterval @ index-DK0DTEdI.js:82
+（匿名） @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+Promise.then
+g @ state-vendor-C9HKGFpL.js:9
+setTimeout
+R @ state-vendor-C9HKGFpL.js:9
+（匿名） @ state-vendor-C9HKGFpL.js:9
+al @ react-vendor-Dvwkxfce.js:32
+ea @ react-vendor-Dvwkxfce.js:32
+bs @ react-vendor-Dvwkxfce.js:32
+rc @ react-vendor-Dvwkxfce.js:32
+sc @ react-vendor-Dvwkxfce.js:32
+nn @ react-vendor-Dvwkxfce.js:32
+ra @ react-vendor-Dvwkxfce.js:32
+Ge @ react-vendor-Dvwkxfce.js:17
+ut @ react-vendor-Dvwkxfce.js:17
+index-DK0DTEdI.js:82 ❌ Account API error: Error: 登录已过期，请重新登录
+    at Object.getAccount (index-DK0DTEdI.js:2:5972)
+    at async state-vendor-C9HKGFpL.js:9:8483

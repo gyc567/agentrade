@@ -1342,7 +1342,7 @@ func (d *Database) GetTraders(userID string) ([]*TraderRecord, error) {
                                COALESCE(custom_prompt, '') as custom_prompt, COALESCE(override_base_prompt, false) as override_base_prompt,
                                COALESCE(system_prompt_template, 'default') as system_prompt_template,
                                COALESCE(is_cross_margin, true) as is_cross_margin, created_at, updated_at
-                        FROM traders WHERE user_id = ? ORDER BY created_at DESC
+                        FROM traders WHERE user_id = $1 ORDER BY created_at DESC
                 `, userID)
                 if err != nil {
                         return nil, err
