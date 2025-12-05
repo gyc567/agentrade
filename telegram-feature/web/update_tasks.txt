@@ -1,0 +1,28 @@
+### Phase 1: Create Configuration
+- [x] Create OpenSpec proposal ✅
+- [x] Create web/vercel.json configuration file ✅
+- [x] Set root directory to "web/" ✅
+- [x] Configure build and output directories ✅
+- [x] Validate JSON syntax ✅
+
+### Phase 2: Vercel Console Configuration
+- [x] Configuration file created ✅
+- [ ] Access Vercel dashboard (MANUAL STEP)
+- [ ] Configure Root Directory: web (via vercel.json)
+- [x] Set Framework Preset: Vite ✅
+- [x] Verify Build Command: npm run build ✅
+- [x] Verify Output Directory: dist ✅
+- [x] Verify Install Command: npm install ✅
+
+### Phase 3: Testing & Validation
+- [x] Test local build: cd web && npm run build ✅
+- [ ] Deploy and verify successful build (PENDING VERCEL)
+- [ ] Test frontend change triggers deployment (PENDING VERCEL)
+- [ ] Test backend change doesn't trigger deployment (PENDING VERCEL)
+- [ ] Verify deployment URL serves content correctly (PENDING VERCEL)
+- [ ] Check Vercel logs for correct directory (PENDING VERCEL)
+
+### Phase 4: Documentation
+- [x] Update deployment documentation ✅
+- [x] Create setup guide for future developers ✅
+- [ ] Archive this change proposal (AFTER VERIFICATION)

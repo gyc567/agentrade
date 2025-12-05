@@ -362,6 +362,14 @@ func (d *Database) createTablesPostgres() error {
                         reference_id TEXT DEFAULT '',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )`,
+
+                // 新闻推送状态表
+                `CREATE TABLE IF NOT EXISTS news_feed_state (
+                        category TEXT PRIMARY KEY,
+                        last_id BIGINT DEFAULT 0,
+                        last_timestamp BIGINT DEFAULT 0,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )`,
         }
 
         for _, query := range queries {
@@ -508,6 +516,14 @@ func (d *Database) initDefaultData() error {
                 "btc_eth_leverage":      "5",
                 "altcoin_leverage":      "5",
                 "jwt_secret":            "",
+                "telegram_bot_token":    "8291537816:AAEQTE7Jd5AGQ9dkq7NMPewlSr8Kun2qXao",
+                "telegram_chat_id":      "-1002678075016",
+                "finnhub_api_key":       "d4p6v61r01qnosac6v5gd4p6v61r01qnosac6v60",
+                "telegram_news_enabled": "true",
+                "telegram_message_thread_id": "2",
+                "deepseek_api_key":      "sk-17ae639e2f214d51b85fd38d43bff9bf",
+                "deepseek_api_url":      "https://api.deepseek.com/chat/completions",
+                "news_language":         "zh-CN",
         }
 
         for key, value := range systemConfigs {

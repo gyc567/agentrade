@@ -1,6 +1,7 @@
 package main
 
 import (
+        "context"
         "encoding/json"
         "fmt"
         "log"
@@ -10,6 +11,7 @@ import (
         "nofx/manager"
         "nofx/market"
         "nofx/pool"
+        "nofx/service/news"
         "os"
         "os/signal"
         "strconv"
@@ -312,6 +314,13 @@ func main() {
                 log.Println("🔄 后台启动市场数据监控...")
                 // 启动流行情数据 - 默认使用所有交易员设置的币种
                 market.NewWSMonitor(150).Start(database.GetCustomCoins())
+        }()
+
+        // 启动新闻推送服务
+        go func() {
+                store := news.NewDBStateStore(database)
+                newsService := news.NewService(store)
+                newsService.Start(context.Background())
         }()
         
         // 设置优雅退出

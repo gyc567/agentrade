@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Debug Test</title>
+    <style>
+        body {
+            background: #0B0E11;
+            color: #EAECEF;
+            font-family: monospace;
+            padding: 20px;
+        }
+        .card {
+            background: #1E2329;
+            border: 1px solid #2B3139;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success { color: #0ECB81; }
+        .error { color: #F6465D; }
+        .warning { color: #F0B90B; }
+        pre {
+            background: #0B0E11;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            background: #F0B90B;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 API 调用测试</h1>
+
+    <div class="card">
+        <h2>1. 测试竞赛数据接口</h2>
+        <button onclick="testCompetition()">调用 /api/competition</button>
+        <div id="competition-result"></div>
+    </div>
+
+    <div class="card">
+        <h2>2. 测试TopTrader账户接口</h2>
+        <button onclick="testAccount()">调用 /api/account</button>
+        <div id="account-result"></div>
+    </div>
+
+    <div class="card">
+        <h2>3. 测试TopTrader列表接口</h2>
+        <button onclick="testTopTraders()">调用 /api/top-traders</button>
+        <div id="toptraders-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://nofx-gyc567.replit.app/api';
+
+        async function testCompetition() {
+            const resultDiv = document.getElementById('competition-result');
+            resultDiv.innerHTML = '<span class="warning">⏳ 测试中...</span>';
+
+            try {
+                console.log('🚀 调用竞赛接口...');
+                const response = await fetch(`${API_BASE}/competition`);
+                console.log('📡 响应状态:', response.status, response.statusText);
+
+                const data = await response.json();
+                console.log('✅ 响应数据:', data);
+
+                if (data && data.traders && data.traders.length > 0) {
+                    const trader = data.traders[0];
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ 成功获取数据</span><br><br>
+                        <strong>Trader: ${trader.trader_name}</strong><br>
+                        <strong class="success">总净值: ${trader.total_equity} USDT</strong><br>
+                        <strong>总盈亏: ${trader.total_pnl} (${trader.total_pnl_pct}%)</strong><br>
+                        <strong>持仓数: ${trader.position_count}</strong><br><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ 没有找到交易员数据</span>`;
+                }
+            } catch (error) {
+                console.error('❌ 错误:', error);
+                resultDiv.innerHTML = `<span class="error">❌ 调用失败: ${error.message}</span>`;
+            }
+        }
+
+        async function testAccount() {
+            const resultDiv = document.getElementById('account-result');
+            resultDiv.innerHTML = '<span class="warning">⏳ 测试中...</span>';
+
+            try {
+                console.log('🚀 调用账户接口...');
+                const response = await fetch(`${API_BASE}/account?trader_id=okx_admin_deepseek_1763601659`);
+                console.log('📡 响应状态:', response.status, response.statusText);
+
+                const data = await response.json();
+                console.log('✅ 响应数据:', data);
+
+                resultDiv.innerHTML = `
+                    <span class="success">✅ 成功获取数据</span><br><br>
+                    <strong class="success">总净值: ${data.total_equity} USDT</strong><br>
+                    <strong>可用余额: ${data.available_balance} USDT</strong><br>
+                    <strong>总盈亏: ${data.total_pnl} USDT (${data.total_pnl_pct}%)</strong><br>
+                    <strong>持仓数: ${data.position_count}</strong><br><br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('❌ 错误:', error);
+                resultDiv.innerHTML = `<span class="error">❌ 调用失败: ${error.message}</span>`;
+            }
+        }
+
+        async function testTopTraders() {
+            const resultDiv = document.getElementById('toptraders-result');
+            resultDiv.innerHTML = '<span class="warning">⏳ 测试中...</span>';
+
+            try {
+                console.log('🚀 调用TopTrader接口...');
+                const response = await fetch(`${API_BASE}/top-traders`);
+                console.log('📡 响应状态:', response.status, response.statusText);
+
+                const data = await response.json();
+                console.log('✅ 响应数据:', data);
+
+                if (data && data.traders && data.traders.length > 0) {
+                    const trader = data.traders[0];
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ 成功获取数据</span><br><br>
+                        <strong>Trader: ${trader.trader_name}</strong><br>
+                        <strong class="success">总净值: ${trader.total_equity} USDT</strong><br>
+                        <strong>总盈亏: ${trader.total_pnl} (${trader.total_pnl_pct}%)</strong><br>
+                        <strong>持仓数: ${trader.position_count}</strong><br><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ 没有找到交易员数据</span>`;
+                }
+            } catch (error) {
+                console.error('❌ 错误:', error);
+                resultDiv.innerHTML = `<span class="error">❌ 调用失败: ${error.message}</span>`;
+            }
+        }
+
+        // 页面加载完成后自动测试
+        window.addEventListener('load', () => {
+            console.log('🔧 页面加载完成，开始测试...');
+            testCompetition();
+        });
+    </script>
+</body>
+</html>

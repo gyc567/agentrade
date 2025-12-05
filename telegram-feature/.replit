@@ -1,0 +1,56 @@
+modules = ["nodejs-20", "go-1.21", "bash", "web", "postgresql-16"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["gcc"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "fullstack-app"
+
+[[workflows.workflow]]
+name = "fullstack-app"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c \"(./nofx-backend 2>&1 | sed 's/^/[BACKEND] /') & (cd web && npm run dev 2>&1 | sed 's/^/[FRONTEND] /')\""
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 9999
+externalPort = 3001
+
+[[ports]]
+localPort = 40169
+externalPort = 3002
+
+[deployment]
+deploymentTarget = "vm"
+run = ["./nofx-backend"]
+build = ["go", "build", "-o", "nofx-backend", "main.go"]
