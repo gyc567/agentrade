@@ -21,8 +21,13 @@ func (r *CreditReservation) Confirm(symbol, action, traderID string) error {
                 return nil // 已处理过，直接返回成功
         }
         if r.onConfirm != nil {
-                return r.onConfirm(symbol, action, traderID)
+                err := r.onConfirm(symbol, action, traderID)
+                if err == nil {
+                        r.alreadyProcessed = true // 成功后标记为已处理
+                }
+                return err
         }
+        r.alreadyProcessed = true // 无回调也标记为已处理
         return nil
 }
 
@@ -32,8 +37,13 @@ func (r *CreditReservation) Release() error {
                 return nil // 已处理过，直接返回成功
         }
         if r.onRelease != nil {
-                return r.onRelease()
+                err := r.onRelease()
+                if err == nil {
+                        r.alreadyProcessed = true // 成功后标记为已处理
+                }
+                return err
         }
+        r.alreadyProcessed = true // 无回调也标记为已处理
         return nil
 }
 
