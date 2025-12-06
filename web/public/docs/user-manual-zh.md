@@ -5,7 +5,7 @@
 ### 1.1 注册
 要使用 Agent Trade，您首先需要注册一个账户：
 
-1. 在 `http://localhost:3000` 或您的部署域名打开Web界面
+1. 在 `https://www.agentrade.xyz/` 打开Web界面
 2. 点击顶部导航栏中的"Register"（注册）按钮
 3. 填写您的电子邮件地址和密码
 4. 点击"Register"（注册）完成注册

@@ -5,7 +5,7 @@
 ### 1.1 Registration
 To use Agent Trade, you first need to register an account:
 
-1. Open the web interface at `http://localhost:3000` or your deployed domain
+1. Open the web interface at `https://www.agentrade.xyz/`
 2. Click on the "Register" button in the top navigation
 3. Fill in your email address and password
 4. Click "Register" to complete the registration
