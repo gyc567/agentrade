@@ -446,8 +446,8 @@ func (t *OKXTrader) CloseLong(symbol string, quantity float64) (map[string]inter
                 posSymbol := pos["symbol"].(string)
                 // 比较时也需要转换格式
                 if (posSymbol == okxSymbol || convertToOKXSymbol(posSymbol) == okxSymbol) && pos["posSide"] == "long" {
-                        if size, ok := pos["position"].(string); ok {
-                                positionSize, _ = strconv.ParseFloat(size, 64)
+                        if size, ok := pos["positionAmt"].(float64); ok {
+                                positionSize = size
                                 break
                         }
                 }
@@ -495,8 +495,8 @@ func (t *OKXTrader) CloseShort(symbol string, quantity float64) (map[string]inte
                 posSymbol := pos["symbol"].(string)
                 // 比较时也需要转换格式
                 if (posSymbol == okxSymbol || convertToOKXSymbol(posSymbol) == okxSymbol) && pos["posSide"] == "short" {
-                        if size, ok := pos["position"].(string); ok {
-                                positionSize, _ = strconv.ParseFloat(size, 64)
+                        if size, ok := pos["positionAmt"].(float64); ok {
+                                positionSize = size
                                 break
                         }
                 }
@@ -828,7 +828,7 @@ func (t *OKXTrader) ClosePosition(symbol string, side string) (map[string]interf
                 return nil, fmt.Errorf("未找到持仓: symbol=%s, side=%s", symbol, side)
         }
 
-        quantity := position["quantity"].(float64)
+        quantity := position["positionAmt"].(float64)
 
         // 根据持仓方向决定平仓方向
         var closeSide string
