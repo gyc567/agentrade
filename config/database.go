@@ -29,6 +29,15 @@ func NewDatabase(dbPath string) (*Database, error) {
                 return nil, fmt.Errorf("DATABASE_URL环境变量未设置")
         }
 
+        // 添加 binary_parameters=yes 参数以解决 Neon PostgreSQL 连接池导致的预处理语句问题
+        // 这可以避免 "bind message supplies X parameters, but prepared statement requires Y" 错误
+        // 参考: https://github.com/lib/pq/issues/435
+        if strings.Contains(databaseURL, "?") {
+                databaseURL += "&binary_parameters=yes"
+        } else {
+                databaseURL += "?binary_parameters=yes"
+        }
+
         log.Println("🔄 连接PostgreSQL数据库...")
         db, err := sql.Open("postgres", databaseURL)
         if err != nil {

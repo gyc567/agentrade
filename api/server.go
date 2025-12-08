@@ -1437,20 +1437,12 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
                 // 验证JWT token
                 claims, err := auth.ValidateJWT(tokenParts[1])
                 if err != nil {
-                        // 如果是admin模式且token验证失败，使用admin用户
-                        if isAdminMode {
-                                user, err := s.database.GetUserByID("admin")
-                                if err != nil {
-                                        log.Printf("获取admin用户失败: %v", err)
-                                        c.JSON(http.StatusUnauthorized, gin.H{"error": "admin用户不存在"})
-                                        c.Abort()
-                                        return
-                                }
-                                c.Set("user", user)
-                                c.Set("user_id", "admin")
-                                c.Next()
-                                return
-                        }
+                        // JWT验证失败时，记录详细错误信息
+                        log.Printf("⚠️ JWT验证失败: %v (token前20字符: %s...)", err, tokenParts[1][:min(20, len(tokenParts[1]))])
+                        
+                        // 即使在admin模式下，如果用户提供了token但验证失败，也应该返回错误
+                        // 只有在完全没有token时才回退到admin用户（见上面的authHeader==""分支）
+                        // 这样可以确保用户的请求使用正确的用户身份
                         c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的token: " + err.Error()})
                         c.Abort()
                         return
