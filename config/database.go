@@ -13,136 +13,76 @@ import (
         "strings"
         "time"
 
-        	"github.com/google/uuid"
-        	_ "github.com/jackc/pgx/v5/stdlib"
-        )
-        
-        // Database 配置数据库
-        type Database struct {
-        	db *sql.DB
+        "github.com/google/uuid"
+        _ "github.com/lib/pq"
+)
+
+// Database 配置数据库
+type Database struct {
+        db *sql.DB
+}
+
+// NewDatabase 创建配置数据库（仅支持PostgreSQL）
+func NewDatabase(dbPath string) (*Database, error) {
+        databaseURL := os.Getenv("DATABASE_URL")
+        if databaseURL == "" {
+                return nil, fmt.Errorf("DATABASE_URL环境变量未设置")
         }
-        
-        // NewDatabase 创建配置数据库（仅支持PostgreSQL）
-        
-        func NewDatabase(dbPath string) (*Database, error) {
-        
-        	databaseURL := os.Getenv("DATABASE_URL")
-        
-        	if databaseURL == "" {
-        
-        		return nil, fmt.Errorf("DATABASE_URL环境变量未设置")
-        
-        	}
-        
-        
-        
-        	log.Println("🔄 连接PostgreSQL数据库...")
-        
-        	db, err := sql.Open("pgx", databaseURL)
-        
-        	if err != nil {
-        
-        		return nil, fmt.Errorf("连接数据库失败: %w", err)
-        
-        	}
-        
-        	// 配置连接池 - 针对Neon PostgreSQL serverless优化
-        
-        	// 这些设置有助于防止冷启动问题
-        
-        	// db.SetMaxOpenConns(10)                  // 最大打开连接数
-        
-        	// db.SetMaxIdleConns(5)                   // 最大空闲连接数
-        
-        	// db.SetConnMaxIdleTime(30 * time.Second) // 空闲连接最大存活时间
-        
-        	// db.SetConnMaxLifetime(5 * time.Minute)  // 连接最大生命周期
-        
-        	// log.Println("📋 数据库连接池配置: MaxOpen=10, MaxIdle=5, IdleTime=30s, Lifetime=5m")
-        
-        	if pingErr := db.Ping(); pingErr != nil {
-        
-        		db.Close()
-        
-        		return nil, fmt.Errorf("数据库连接测试失败: %w", pingErr)
-        
-        	}
-        
-        
-        
-        	log.Println("✅ 成功连接PostgreSQL数据库!")
-        
-        
-        
-        	database := &Database{db: db}
-        
-        	log.Println("🔄 开始创建表...")
-        
-        	if err := database.createTables(); err != nil {
-        
-        		return nil, fmt.Errorf("创建表失败: %w", err)
-        
-        	}
-        
-        	log.Println("✅ 表创建成功!")
-        
-        
-        
-        	log.Println("🔄 开始修改表结构...")
-        
-        	if err := database.alterTables(); err != nil {
-        
-        		log.Printf("⚠️ 数据库迁移警告: %v", err)
-        
-        	}
-        
-        	log.Println("✅ 表结构修改完成!")
-        
-        
-        
-        	log.Println("🔄 开始初始化默认数据...")
-        
-        	if err := database.initDefaultData(); err != nil {
-        
-        		return nil, fmt.Errorf("初始化默认数据失败: %w", err)
-        
-        	}
-        
-        	log.Println("✅ 默认数据初始化完成!")
-        
-        
-        
-        	return database, nil
-        
+
+        // 添加 binary_parameters=yes 参数以解决 Neon PostgreSQL 连接池导致的预处理语句问题
+        // 这可以避免 "bind message supplies X parameters, but prepared statement requires Y" 错误
+        // 参考: https://github.com/lib/pq/issues/435
+        if strings.Contains(databaseURL, "?") {
+                databaseURL += "&binary_parameters=yes"
+        } else {
+                databaseURL += "?binary_parameters=yes"
         }
-        
-        
-        
-        // GetDB 获取底层数据库连接
-        
-        func (d *Database) GetDB() *sql.DB {
-        
-        	return d.db
-        
+
+        log.Println("🔄 连接PostgreSQL数据库...")
+        db, err := sql.Open("postgres", databaseURL)
+        if err != nil {
+                return nil, fmt.Errorf("连接数据库失败: %w", err)
         }
-        
-        
-        
-        // Exec 执行SQL语句
-        
-        func (d *Database) Exec(query string, args ...interface{}) (sql.Result, error) {
-        
-        	return d.exec(query, args...)
-        
+
+        // 配置连接池 - 针对Neon PostgreSQL serverless优化
+        // 这些设置有助于防止冷启动问题
+        db.SetMaxOpenConns(10)                  // 最大打开连接数
+        db.SetMaxIdleConns(5)                   // 最大空闲连接数
+        db.SetConnMaxIdleTime(30 * time.Second) // 空闲连接最大存活时间
+        db.SetConnMaxLifetime(5 * time.Minute)  // 连接最大生命周期
+        log.Println("📋 数据库连接池配置: MaxOpen=10, MaxIdle=5, IdleTime=30s, Lifetime=5m")
+
+        if pingErr := db.Ping(); pingErr != nil {
+                db.Close()
+                return nil, fmt.Errorf("数据库连接测试失败: %w", pingErr)
         }
-        
-        
-        
-        // isTransientError 检查是否是可重试的临时错误
-        
-        func isTransientError(err error) bool {
-        
-        
+
+        log.Println("✅ 成功连接PostgreSQL数据库!")
+
+        database := &Database{db: db}
+        log.Println("🔄 开始创建表...")
+        if err := database.createTables(); err != nil {
+                return nil, fmt.Errorf("创建表失败: %w", err)
+        }
+        log.Println("✅ 表创建成功!")
+
+        log.Println("🔄 开始修改表结构...")
+        if err := database.alterTables(); err != nil {
+                log.Printf("⚠️ 数据库迁移警告: %v", err)
+        }
+        log.Println("✅ 表结构修改完成!")
+
+        log.Println("🔄 开始初始化默认数据...")
+        if err := database.initDefaultData(); err != nil {
+                return nil, fmt.Errorf("初始化默认数据失败: %w", err)
+        }
+        log.Println("✅ 默认数据初始化完成!")
+
+        return database, nil
+}
+
+// isTransientError 检查是否是可重试的临时错误
+func isTransientError(err error) bool {
         if err == nil {
                 return false
         }
@@ -232,25 +172,13 @@ func (d *Database) StartKeepAlive() {
 
 // convertPlaceholders 将?占位符转换为PostgreSQL的$1, $2格式
 func (d *Database) convertPlaceholders(query string) string {
-	// 如果查询中不包含?，直接返回
-	if !strings.Contains(query, "?") {
-		return query
-	}
-
-	var builder strings.Builder
-	// 预分配容量，略大于原字符串
-	builder.Grow(len(query) + 16)
-
-	paramIndex := 1
-	for _, r := range query {
-		if r == '?' {
-			fmt.Fprintf(&builder, "$%d", paramIndex)
-			paramIndex++
-		} else {
-			builder.WriteRune(r)
-		}
-	}
-	return builder.String()
+        result := query
+        index := 1
+        for strings.Contains(result, "?") {
+                result = strings.Replace(result, "?", fmt.Sprintf("$%d", index), 1)
+                index++
+        }
+        return result
 }
 
 // query 执行查询并自动转换占位符
@@ -265,9 +193,7 @@ func (d *Database) queryRow(query string, args ...interface{}) *sql.Row {
 
 // exec 执行语句并自动转换占位符
 func (d *Database) exec(query string, args ...interface{}) (sql.Result, error) {
-	convertedQuery := d.convertPlaceholders(query)
-	// log.Printf("DEBUG SQL: %s", convertedQuery) // Uncomment for debugging
-	return d.db.Exec(convertedQuery, args...)
+        return d.db.Exec(d.convertPlaceholders(query), args...)
 }
 
 // createTables 创建数据库表
