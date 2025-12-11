@@ -151,65 +151,102 @@ func (d *Database) GetOrCreateUserCredits(userID string) (*UserCredits, error) {
 
 // AddCredits 增加积分（事务，带流水记录）
 func (d *Database) AddCredits(userID string, amount int, category, description, refID string) error {
-        if amount <= 0 {
-                return fmt.Errorf("增加积分数量必须大于0")
-        }
+	if amount <= 0 {
+		return fmt.Errorf("增加积分数量必须大于0")
+	}
 
-        _, err := withRetry(func() (bool, error) {
-                // 开始事务
-                tx, err := d.db.Begin()
-                if err != nil {
-                        return false, fmt.Errorf("开始事务失败: %w", err)
-                }
-                defer tx.Rollback()
+	_, err := withRetry(func() (bool, error) {
+		// 开始事务
+		tx, err := d.db.Begin()
+		if err != nil {
+			return false, fmt.Errorf("开始事务失败: %w", err)
+		}
+		defer tx.Rollback()
 
-                // 获取当前积分并锁定行
-                var availableCredits, totalCredits int
-                var userCreditsID string
-                err = tx.QueryRow(`
-                        SELECT id, available_credits, total_credits
-                        FROM user_credits
-                        WHERE user_id = $1
-                        FOR UPDATE
-                `, userID).Scan(&userCreditsID, &availableCredits, &totalCredits)
-                if err != nil {
-                        return false, fmt.Errorf("锁定用户积分记录失败: %w", err)
-                }
+		if err := d.AddCreditsTx(tx, userID, amount, category, description, refID); err != nil {
+			return false, err
+		}
 
-                // 计算新的积分
-                newAvailableCredits := availableCredits + amount
-                newTotalCredits := totalCredits + amount
+		// 提交事务
+		if err := tx.Commit(); err != nil {
+			return false, fmt.Errorf("提交事务失败: %w", err)
+		}
 
-                // 更新用户积分
-                _, err = tx.Exec(`
-                        UPDATE user_credits
-                        SET available_credits = $1, total_credits = $2, updated_at = CURRENT_TIMESTAMP
-                        WHERE user_id = $3
-                `, newAvailableCredits, newTotalCredits, userID)
-                if err != nil {
-                        return false, fmt.Errorf("更新用户积分失败: %w", err)
-                }
+		return true, nil
+	})
+	return err
+}
 
-                // 记录积分流水
-                _, err = tx.Exec(`
-                        INSERT INTO credit_transactions
-                        (id, user_id, type, amount, balance_before, balance_after, category, description, reference_id, created_at)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
-                `, GenerateUUID(), userID, "credit", amount, availableCredits, newAvailableCredits,
-                        category, description, refID)
-                if err != nil {
-                        return false, fmt.Errorf("记录积分流水失败: %w", err)
-                }
+// AddCreditsTx 增加积分（使用现有事务）
+func (d *Database) AddCreditsTx(tx *sql.Tx, userID string, amount int, category, description, refID string) error {
+	// 获取或创建用户积分账户（如果是新用户且是被邀请的，可能还没有积分记录）
+	// 注意：GetOrCreateUserCredits 是单独的事务，这里我们假设积分账户已存在，
+	// 或者在事务中处理。为了简化，我们先查询并锁定。
+	// 如果积分表设计支持INSERT ON CONFLICT，我们可以直接UPSERT。
+	// 查看 GetOrCreateUserCredits 使用了 UPSERT。
+	// 我们在这里需要在 Tx 中也能创建。
 
-                // 提交事务
-                if err := tx.Commit(); err != nil {
-                        return false, fmt.Errorf("提交事务失败: %w", err)
-                }
+	// 尝试锁定行
+	var userCreditsID string
+	var availableCredits, totalCredits, usedCredits int
+	var createdAt, updatedAt time.Time
 
-                log.Printf("✅ 用户 %s 增加积分 %d (类别: %s)", userID, amount, category)
-                return true, nil
-        })
-        return err
+	err := tx.QueryRow(`
+		SELECT id, available_credits, total_credits, used_credits, created_at, updated_at
+		FROM user_credits
+		WHERE user_id = $1
+		FOR UPDATE
+	`, userID).Scan(&userCreditsID, &availableCredits, &totalCredits, &usedCredits, &createdAt, &updatedAt)
+
+	isNewAccount := false
+	if err != nil {
+		if err == sql.ErrNoRows {
+			isNewAccount = true
+			availableCredits = 0
+			totalCredits = 0
+			usedCredits = 0
+			createdAt = time.Now()
+			updatedAt = time.Now()
+			userCreditsID = GenerateUUID()
+		} else {
+			return fmt.Errorf("锁定用户积分记录失败: %w", err)
+		}
+	}
+
+	// 计算新的积分
+	newAvailableCredits := availableCredits + amount
+	newTotalCredits := totalCredits + amount
+
+	if isNewAccount {
+		_, err = tx.Exec(`
+			INSERT INTO user_credits (id, user_id, available_credits, total_credits, used_credits, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`, userCreditsID, userID, newAvailableCredits, newTotalCredits, usedCredits, createdAt, updatedAt)
+	} else {
+		// 更新用户积分
+		_, err = tx.Exec(`
+			UPDATE user_credits
+			SET available_credits = $1, total_credits = $2, updated_at = CURRENT_TIMESTAMP
+			WHERE user_id = $3
+		`, newAvailableCredits, newTotalCredits, userID)
+	}
+	if err != nil {
+		return fmt.Errorf("更新用户积分失败: %w", err)
+	}
+
+	// 记录积分流水
+	_, err = tx.Exec(`
+		INSERT INTO credit_transactions
+		(id, user_id, type, amount, balance_before, balance_after, category, description, reference_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+	`, GenerateUUID(), userID, "credit", amount, availableCredits, newAvailableCredits,
+		category, description, refID)
+	if err != nil {
+		return fmt.Errorf("记录积分流水失败: %w", err)
+	}
+
+	log.Printf("✅ 用户 %s 增加积分 %d (类别: %s)", userID, amount, category)
+	return nil
 }
 
 // DeductCredits 扣减积分（事务，带流水记录，检查余额）

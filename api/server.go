@@ -1469,156 +1469,190 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 
 // handleRegister 处理用户注册请求
 func (s *Server) handleRegister(c *gin.Context) {
-        var req struct {
-                Email    string `json:"email" binding:"required,email"`
-                Password string `json:"password" binding:"required,min=8"`
-                BetaCode string `json:"beta_code"`
-        }
+	var req struct {
+		Email      string `json:"email" binding:"required,email"`
+		Password   string `json:"password" binding:"required,min=8"`
+		BetaCode   string `json:"beta_code"`
+		InviteCode string `json:"invite_code"`
+	}
 
-        // 验证请求数据
-        if err := c.ShouldBindJSON(&req); err != nil {
-                c.JSON(http.StatusBadRequest, gin.H{
-                        "success": false,
-                        "error":   "请求数据格式错误",
-                        "details": "请确保邮箱格式正确，密码长度不少于8位",
-                })
-                return
-        }
+	// 验证请求数据
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "请求数据格式错误",
+			"details": "请确保邮箱格式正确，密码长度不少于8位",
+		})
+		return
+	}
 
-        // 验证密码强度
-        if len(req.Password) < 8 {
-                c.JSON(http.StatusBadRequest, gin.H{
-                        "success": false,
-                        "error":   "密码强度不够",
-                        "details": "密码必须至少包含8个字符",
-                })
-                return
-        }
+	// 验证密码强度
+	if len(req.Password) < 8 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "密码强度不够",
+			"details": "密码必须至少包含8个字符",
+		})
+		return
+	}
 
-        // 检查是否开启了内测模式
-        betaModeStr, _ := s.database.GetSystemConfig("beta_mode")
-        if betaModeStr == "true" {
-                // 内测模式下必须提供有效的内测码
-                if req.BetaCode == "" {
-                        c.JSON(http.StatusBadRequest, gin.H{
-                                "success": false,
-                                "error":   "内测码不能为空",
-                                "details": "当前为内测期间，注册需要提供有效的内测码",
-                        })
-                        return
-                }
+	// 检查是否开启了内测模式
+	betaModeStr, _ := s.database.GetSystemConfig("beta_mode")
+	if betaModeStr == "true" {
+		// 内测模式下必须提供有效的内测码
+		if req.BetaCode == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"error":   "内测码不能为空",
+				"details": "当前为内测期间，注册需要提供有效的内测码",
+			})
+			return
+		}
 
-                // 验证内测码
-                isValid, err := s.database.ValidateBetaCode(req.BetaCode)
-                if err != nil {
-                        c.JSON(http.StatusInternalServerError, gin.H{
-                                "success": false,
-                                "error":   "内测码验证失败",
-                                "details": "服务器内部错误，请稍后重试",
-                        })
-                        return
-                }
-                if !isValid {
-                        c.JSON(http.StatusBadRequest, gin.H{
-                                "success": false,
-                                "error":   "内测码无效",
-                                "details": "内测码无效或已被使用，请检查后重试",
-                        })
-                        return
-                }
-        }
+		// 验证内测码
+		isValid, err := s.database.ValidateBetaCode(req.BetaCode)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   "内测码验证失败",
+				"details": "服务器内部错误，请稍后重试",
+			})
+			return
+		}
+		if !isValid {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"error":   "内测码无效",
+				"details": "内测码无效或已被使用，请检查后重试",
+			})
+			return
+		}
+	}
 
-        // 检查邮箱是否已存在
-        _, err := s.database.GetUserByEmail(req.Email)
-        if err == nil {
-                c.JSON(http.StatusConflict, gin.H{
-                        "success": false,
-                        "error":   "邮箱已被注册",
-                        "details": "该邮箱地址已经注册，请使用其他邮箱或尝试登录",
-                })
-                return
-        }
-        if err != sql.ErrNoRows {
-                // 数据库查询失败，不是用户不存在的错误
-                c.JSON(http.StatusInternalServerError, gin.H{
-                        "success": false,
-                        "error":   "系统错误",
-                        "details": "服务器内部错误，请稍后重试",
-                })
-                return
-        }
+	// 验证邀请码 (如果提供)
+	var inviter *config.User
+	if req.InviteCode != "" {
+		var err error
+		inviter, err = s.database.GetUserByInviteCode(req.InviteCode)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"success": false,
+					"error":   "邀请码无效",
+					"details": "请检查邀请码是否正确",
+				})
+				return
+			}
+			log.Printf("验证邀请码失败: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   "系统错误",
+				"details": "验证邀请码时发生错误",
+			})
+			return
+		}
+	}
 
-        // 生成密码哈希
-        passwordHash, err := auth.HashPassword(req.Password)
-        if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{
-                        "success": false,
-                        "error":   "密码处理失败",
-                        "details": "服务器内部错误，请稍后重试",
-                })
-                return
-        }
+	// 检查邮箱是否已存在
+	_, err := s.database.GetUserByEmail(req.Email)
+	if err == nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"success": false,
+			"error":   "邮箱已被注册",
+			"details": "该邮箱地址已经注册，请使用其他邮箱或尝试登录",
+		})
+		return
+	}
+	if err != sql.ErrNoRows {
+		// 数据库查询失败，不是用户不存在的错误
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "系统错误",
+			"details": "服务器内部错误，请稍后重试",
+		})
+		return
+	}
 
-        // 创建用户（直接激活，无需OTP验证）
-        userID := uuid.New().String()
-        now := time.Now()
-        user := &config.User{
-                ID:             userID,
-                Email:          req.Email,
-                PasswordHash:   passwordHash,
-                OTPSecret:      "",        // 移除OTP密钥
-                OTPVerified:    true,      // 直接标记为已验证
-                IsActive:       true,      // 账户激活状态
-                IsAdmin:        false,     // 非管理员
-                BetaCode:       req.BetaCode, // 关联内测码
-                FailedAttempts: 0,         // 失败尝试次数
-                CreatedAt:      now,       // 创建时间
-                UpdatedAt:      now,       // 更新时间
-        }
+	// 生成密码哈希
+	passwordHash, err := auth.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "密码处理失败",
+			"details": "服务器内部错误，请稍后重试",
+		})
+		return
+	}
 
-        err = s.database.CreateUser(user)
-        if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{
-                        "success": false,
-                        "error":   "创建用户失败",
-                        "details": "服务器内部错误，请稍后重试",
-                })
-                return
-        }
+	// 创建用户（直接激活，无需OTP验证）
+	userID := uuid.New().String()
+	now := time.Now()
+	user := &config.User{
+		ID:             userID,
+		Email:          req.Email,
+		PasswordHash:   passwordHash,
+		OTPSecret:      "",   // 移除OTP密钥
+		OTPVerified:    true, // 直接标记为已验证
+		IsActive:       true, // 账户激活状态
+		IsAdmin:        false, // 非管理员
+		BetaCode:       req.BetaCode, // 关联内测码
+		FailedAttempts: 0,    // 失败尝试次数
+		CreatedAt:      now,  // 创建时间
+		UpdatedAt:      now,  // 更新时间
+	}
 
-        // 如果是内测模式，标记内测码为已使用
-        betaModeStr2, _ := s.database.GetSystemConfig("beta_mode")
-        if betaModeStr2 == "true" && req.BetaCode != "" {
-                err := s.database.UseBetaCode(req.BetaCode, req.Email)
-                if err != nil {
-                        log.Printf("⚠️ 标记内测码为已使用失败: %v", err)
-                        // 这里不返回错误，因为用户已经创建成功
-                } else {
-                        log.Printf("✓ 内测码 %s 已被用户 %s 使用", req.BetaCode, req.Email)
-                }
-        }
+	// 设置邀请关系
+	if inviter != nil {
+		user.InvitedByUserID = inviter.ID
+		user.InvitationLevel = inviter.InvitationLevel + 1
+	}
 
-        // 生成JWT令牌
-        token, err := auth.GenerateJWT(userID, req.Email)
-        if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{
-                        "success": false,
-                        "error":   "令牌生成失败",
-                        "details": "服务器内部错误，请稍后重试",
-                })
-                return
-        }
+	// 使用支持事务和邀请奖励的创建方法
+	err = s.database.CreateUserWithInvitation(user)
+	if err != nil {
+		log.Printf("创建用户失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "创建用户失败",
+			"details": "服务器内部错误，请稍后重试",
+		})
+		return
+	}
 
-        // 返回成功信息
-        c.JSON(http.StatusOK, gin.H{
-                "success": true,
-                "message": "注册成功，欢迎加入Monnaire Trading Agent OS！",
-                "token":   token,
-                "user": gin.H{
-                        "id":    userID,
-                        "email": req.Email,
-                },
-        })
+	// 如果是内测模式，标记内测码为已使用
+	betaModeStr2, _ := s.database.GetSystemConfig("beta_mode")
+	if betaModeStr2 == "true" && req.BetaCode != "" {
+		err := s.database.UseBetaCode(req.BetaCode, req.Email)
+		if err != nil {
+			log.Printf("⚠️ 标记内测码为已使用失败: %v", err)
+			// 这里不返回错误，因为用户已经创建成功
+		} else {
+			log.Printf("✓ 内测码 %s 已被用户 %s 使用", req.BetaCode, req.Email)
+		}
+	}
+
+	// 生成JWT令牌
+	token, err := auth.GenerateJWT(userID, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "令牌生成失败",
+			"details": "服务器内部错误，请稍后重试",
+		})
+		return
+	}
+
+	// 返回成功信息
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "注册成功，欢迎加入Monnaire Trading Agent OS！",
+		"token":   token,
+		"user": gin.H{
+			"id":          userID,
+			"email":       req.Email,
+			"invite_code": user.InviteCode,
+		},
+	})
 }
 
 // handleCompleteRegistration 完成注册（验证OTP）
@@ -1738,15 +1772,15 @@ func (s *Server) handleLogin(c *gin.Context) {
                 return
         }
 
-        // 返回成功信息
-        c.JSON(http.StatusOK, gin.H{
-                "token":   token,
-                "user_id": user.ID,
-                "email":   user.Email,
-                "message": "登录成功",
-        })
-}
-
+        	// 返回成功信息
+        	c.JSON(http.StatusOK, gin.H{
+        		"token":       token,
+        		"user_id":     user.ID,
+        		"email":       user.Email,
+        		"invite_code": user.InviteCode,
+        		"message":     "登录成功",
+        	})
+        }
 // handleVerifyOTP 验证OTP并完成登录
 func (s *Server) handleVerifyOTP(c *gin.Context) {
         var req struct {

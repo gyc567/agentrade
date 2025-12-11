@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useUserProfile, useUserCredits } from '../hooks/useUserProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -22,6 +22,19 @@ const UserProfilePage: React.FC = () => {
   const { userProfile, loading, error, refetch } = useUserProfile();
   const { language } = useLanguage();
   const { credits, loading: creditsLoading, error: creditsError } = useUserCredits();
+  const [copySuccess, setCopySuccess] = useState<string>('');
+
+  const handleCopy = async (text: string, type: 'code' | 'link') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(type);
+      setTimeout(() => setCopySuccess(''), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+  };
+
+  const inviteLink = user?.invite_code ? `${window.location.origin}/register?inviteCode=${user.invite_code}` : '';
 
   // 渲染加载状态
   if (loading) {
@@ -237,6 +250,67 @@ const UserProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* 邀请中心 */}
+        {user?.invite_code && (
+          <div className="mt-8">
+            <div className="binance-card-no-hover p-6">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                {language === 'zh' ? '邀请中心' : 'Invitation Center'}
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 邀请码 */}
+                <div className="p-4 rounded bg-[#1E2329] border border-[#2B3139]">
+                  <div className="text-sm text-[var(--text-secondary)] mb-2">
+                    {language === 'zh' ? '我的邀请码' : 'My Invite Code'}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xl font-mono font-bold text-[var(--binance-yellow)]">
+                      {user.invite_code}
+                    </div>
+                    <button 
+                      onClick={() => handleCopy(user.invite_code!, 'code')}
+                      className="text-sm px-3 py-1 rounded bg-[#2B3139] hover:bg-[#474D57] text-[var(--text-primary)] transition-colors"
+                    >
+                      {copySuccess === 'code' 
+                        ? (language === 'zh' ? '已复制' : 'Copied') 
+                        : (language === 'zh' ? '复制' : 'Copy')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 邀请链接 */}
+                <div className="p-4 rounded bg-[#1E2329] border border-[#2B3139]">
+                  <div className="text-sm text-[var(--text-secondary)] mb-2">
+                    {language === 'zh' ? '邀请链接' : 'Invitation Link'}
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-sm text-[var(--text-tertiary)] truncate flex-1 font-mono">
+                      {inviteLink}
+                    </div>
+                    <button 
+                      onClick={() => handleCopy(inviteLink, 'link')}
+                      className="text-sm px-3 py-1 rounded bg-[#2B3139] hover:bg-[#474D57] text-[var(--text-primary)] transition-colors shrink-0"
+                    >
+                      {copySuccess === 'link' 
+                        ? (language === 'zh' ? '已复制' : 'Copied') 
+                        : (language === 'zh' ? '复制链接' : 'Copy Link')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 text-sm text-[var(--text-secondary)]">
+                💡 {language === 'zh' 
+                  ? '邀请好友注册，每成功邀请一人，您将获得 ' 
+                  : 'Invite friends to register, and for every successful invitation, you will get '}
+                <span className="text-[var(--binance-yellow)]">10 {language === 'zh' ? '积分' : 'Credits'}</span> 
+                {language === 'zh' ? ' 奖励！' : ' reward!'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 交易员概览 */}
         {(userProfile?.trader_count || 0) > 0 && (

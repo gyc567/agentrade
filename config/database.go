@@ -784,19 +784,22 @@ func (d *Database) migrateAIModelsTable() error {
 
 // User 用户配置
 type User struct {
-        ID             string     `json:"id"`
-        Email          string     `json:"email"`
-        PasswordHash   string     `json:"-"` // 不返回到前端
-        OTPSecret      string     `json:"-"` // 不返回到前端
-        OTPVerified    bool       `json:"otp_verified"`
-        LockedUntil    *time.Time `json:"-"` // 账户锁定到期时间，不返回前端
-        FailedAttempts int        `json:"-"` // 失败尝试次数，不返回前端
-        LastFailedAt   *time.Time `json:"-"` // 最后失败时间，不返回前端
-        IsActive       bool       `json:"is_active"`
-        IsAdmin        bool       `json:"is_admin"`
-        BetaCode       string     `json:"-"` // 内测码，不返回前端
-        CreatedAt      time.Time  `json:"created_at"`
-        UpdatedAt      time.Time  `json:"updated_at"`
+        ID              string     `json:"id"`
+        Email           string     `json:"email"`
+        PasswordHash    string     `json:"-"` // 不返回到前端
+        OTPSecret       string     `json:"-"` // 不返回到前端
+        OTPVerified     bool       `json:"otp_verified"`
+        LockedUntil     *time.Time `json:"-"` // 账户锁定到期时间，不返回前端
+        FailedAttempts  int        `json:"-"` // 失败尝试次数，不返回前端
+        LastFailedAt    *time.Time `json:"-"` // 最后失败时间，不返回前端
+        IsActive        bool       `json:"is_active"`
+        IsAdmin         bool       `json:"is_admin"`
+        BetaCode        string     `json:"-"` // 内测码，不返回前端
+        InviteCode      string     `json:"invite_code"`
+        InvitedByUserID string     `json:"invited_by_user_id,omitempty"`
+        InvitationLevel int        `json:"invitation_level"`
+        CreatedAt       time.Time  `json:"created_at"`
+        UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 // AIModelConfig AI模型配置
@@ -878,30 +881,130 @@ func GenerateOTPSecret() (string, error) {
         return base32.StdEncoding.EncodeToString(secret), nil
 }
 
+// GenerateInviteCode 生成8位唯一邀请码
+func GenerateInviteCode() string {
+	const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // 去除易混淆字符
+	b := make([]byte, 8)
+	rand.Read(b)
+	for i := range b {
+		b[i] = charset[int(b[i])%len(charset)]
+	}
+	return string(b)
+}
+
 // CreateUser 创建用户（带重试逻辑，处理Neon冷启动）
 func (d *Database) CreateUser(user *User) error {
-        // 处理可空时间字段
-        var lockedUntil, lastFailedAt sql.NullTime
-        if user.LockedUntil != nil {
-                lockedUntil = sql.NullTime{Time: *user.LockedUntil, Valid: true}
-        }
-        if user.LastFailedAt != nil {
-                lastFailedAt = sql.NullTime{Time: *user.LastFailedAt, Valid: true}
-        }
+	// 如果没有邀请码，生成一个
+	if user.InviteCode == "" {
+		user.InviteCode = GenerateInviteCode()
+	}
 
-        // 使用 withRetry 处理 Neon 冷启动问题
-        _, err := withRetry(func() (bool, error) {
-                _, execErr := d.exec(`
+	// 处理可空时间字段
+	var lockedUntil, lastFailedAt sql.NullTime
+	if user.LockedUntil != nil {
+		lockedUntil = sql.NullTime{Time: *user.LockedUntil, Valid: true}
+	}
+	if user.LastFailedAt != nil {
+		lastFailedAt = sql.NullTime{Time: *user.LastFailedAt, Valid: true}
+	}
+
+	var invitedBy sql.NullString
+	if user.InvitedByUserID != "" {
+		invitedBy = sql.NullString{String: user.InvitedByUserID, Valid: true}
+	}
+
+	// 使用 withRetry 处理 Neon 冷启动问题
+	_, err := withRetry(func() (bool, error) {
+		_, execErr := d.exec(`
                         INSERT INTO users (id, email, password_hash, otp_secret, otp_verified,
                                            locked_until, failed_attempts, last_failed_at,
-                                           is_active, is_admin, beta_code, created_at, updated_at)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                                           is_active, is_admin, beta_code,
+                                           invite_code, invited_by_user_id, invitation_level,
+                                           created_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                 `, user.ID, user.Email, user.PasswordHash, user.OTPSecret, user.OTPVerified,
-                        lockedUntil, user.FailedAttempts, lastFailedAt,
-                        user.IsActive, user.IsAdmin, user.BetaCode, user.CreatedAt, user.UpdatedAt)
-                return true, execErr
-        })
-        return err
+			lockedUntil, user.FailedAttempts, lastFailedAt,
+			user.IsActive, user.IsAdmin, user.BetaCode,
+			user.InviteCode, invitedBy, user.InvitationLevel,
+			user.CreatedAt, user.UpdatedAt)
+		return true, execErr
+	})
+	return err
+}
+
+// CreateUserWithInvitation 创建用户并处理邀请逻辑（原子事务）
+func (d *Database) CreateUserWithInvitation(user *User) error {
+	_, err := withRetry(func() (bool, error) {
+		tx, err := d.db.Begin()
+		if err != nil {
+			return false, fmt.Errorf("启动事务失败: %w", err)
+		}
+		defer tx.Rollback()
+
+		// 1. 生成唯一邀请码 (Retry Loop)
+		var inviteCode string
+		maxRetries := 3
+		for i := 0; i < maxRetries; i++ {
+			code := GenerateInviteCode()
+			// 简单的存在性检查
+			var exists bool
+			tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE invite_code = $1)", code).Scan(&exists)
+			if !exists {
+				inviteCode = code
+				break
+			}
+		}
+		if inviteCode == "" {
+			return false, fmt.Errorf("无法生成唯一邀请码")
+		}
+		user.InviteCode = inviteCode
+
+		// 2. 插入用户
+		var lockedUntil, lastFailedAt sql.NullTime
+		if user.LockedUntil != nil {
+			lockedUntil = sql.NullTime{Time: *user.LockedUntil, Valid: true}
+		}
+		if user.LastFailedAt != nil {
+			lastFailedAt = sql.NullTime{Time: *user.LastFailedAt, Valid: true}
+		}
+
+		var invitedBy sql.NullString
+		if user.InvitedByUserID != "" {
+			invitedBy = sql.NullString{String: user.InvitedByUserID, Valid: true}
+		}
+
+		_, execErr := tx.Exec(`
+                INSERT INTO users (id, email, password_hash, otp_secret, otp_verified,
+                                   locked_until, failed_attempts, last_failed_at,
+                                   is_active, is_admin, beta_code, 
+                                   invite_code, invited_by_user_id, invitation_level,
+                                   created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        `, user.ID, user.Email, user.PasswordHash, user.OTPSecret, user.OTPVerified,
+			lockedUntil, user.FailedAttempts, lastFailedAt,
+			user.IsActive, user.IsAdmin, user.BetaCode,
+			user.InviteCode, invitedBy, user.InvitationLevel,
+			user.CreatedAt, user.UpdatedAt)
+
+		if execErr != nil {
+			return false, fmt.Errorf("插入用户失败: %w", execErr)
+		}
+
+		// 3. 如果有邀请人，发放奖励
+		if user.InvitedByUserID != "" {
+			err := d.AddCreditsTx(tx, user.InvitedByUserID, 10, "referral_reward",
+				fmt.Sprintf("邀请新用户奖励: %s", user.Email), user.ID)
+			if err != nil {
+				return false, fmt.Errorf("发放邀请奖励失败: %w", err)
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			return false, fmt.Errorf("提交事务失败: %w", err)
+		}
+		return true, nil
+	})
+	return err
 }
 
 // EnsureDefaultUser 确保default系统用户存在（用于存储系统级别配置）
@@ -974,16 +1077,32 @@ func (d *Database) GetUserByEmail(email string) (*User, error) {
         return withRetry(func() (*User, error) {
                 var user User
                 var lockedUntil, lastFailedAt sql.NullTime
+                // 兼容 InviteCode 等新字段可能为空的情况 (如果未运行迁移)
+                // 使用 COALESCE 确保 Scan 不会因为 NULL 失败 (如果 Scan 目标是 string)
+                // 但这里 InviteCode 在 struct 中是 string，DB 中是 TEXT NULL. Scan 到 string 会处理 NULL 吗？
+                // sql.Scan 处理 NULL 到 string 会报错。需要使用 sql.NullString 或 COALESCE。
+                // 为了稳健，我们查询所有字段，并处理 NULL。
+                
+                // 由于我们已经执行了 SQL 迁移，这些字段应该存在。但为了防止代码先于 DB 更新运行崩溃，
+                // 我们可以暂且只查询旧字段，或者假设迁移已完成。
+                // 按照指令，我们假设迁移完成。
+                // Update: GetUserByEmail 原有逻辑只查询了部分字段。
+                // 为了保持一致性，我们应该更新 SELECT 语句。
+                
+                var inviteCode, invitedByUserID sql.NullString
+                
                 err := d.queryRow(`
                         SELECT id, email, password_hash, otp_secret, otp_verified,
                                locked_until, failed_attempts, last_failed_at,
                                is_active, is_admin, beta_code,
+                               COALESCE(invite_code, ''), invited_by_user_id, COALESCE(invitation_level, 0),
                                created_at, updated_at
                         FROM users WHERE email = ?
                 `, email).Scan(
                         &user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret, &user.OTPVerified,
                         &lockedUntil, &user.FailedAttempts, &lastFailedAt,
                         &user.IsActive, &user.IsAdmin, &user.BetaCode,
+                        &inviteCode, &invitedByUserID, &user.InvitationLevel,
                         &user.CreatedAt, &user.UpdatedAt,
                 )
                 if err != nil {
@@ -995,6 +1114,44 @@ func (d *Database) GetUserByEmail(email string) (*User, error) {
                 if lastFailedAt.Valid {
                         user.LastFailedAt = &lastFailedAt.Time
                 }
+                user.InviteCode = inviteCode.String
+                user.InvitedByUserID = invitedByUserID.String
+                return &user, nil
+        })
+}
+
+// GetUserByInviteCode 通过邀请码获取用户
+func (d *Database) GetUserByInviteCode(code string) (*User, error) {
+        return withRetry(func() (*User, error) {
+                var user User
+                var lockedUntil, lastFailedAt sql.NullTime
+                var inviteCode, invitedByUserID sql.NullString
+
+                err := d.queryRow(`
+                        SELECT id, email, password_hash, otp_secret, otp_verified,
+                               locked_until, failed_attempts, last_failed_at,
+                               is_active, is_admin, beta_code,
+                               invite_code, invited_by_user_id, invitation_level,
+                               created_at, updated_at
+                        FROM users WHERE invite_code = ?
+                `, code).Scan(
+                        &user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret, &user.OTPVerified,
+                        &lockedUntil, &user.FailedAttempts, &lastFailedAt,
+                        &user.IsActive, &user.IsAdmin, &user.BetaCode,
+                        &inviteCode, &invitedByUserID, &user.InvitationLevel,
+                        &user.CreatedAt, &user.UpdatedAt,
+                )
+                if err != nil {
+                        return nil, err
+                }
+                if lockedUntil.Valid {
+                        user.LockedUntil = &lockedUntil.Time
+                }
+                if lastFailedAt.Valid {
+                        user.LastFailedAt = &lastFailedAt.Time
+                }
+                user.InviteCode = inviteCode.String
+                user.InvitedByUserID = invitedByUserID.String
                 return &user, nil
         })
 }
@@ -1004,16 +1161,20 @@ func (d *Database) GetUserByID(userID string) (*User, error) {
         return withRetry(func() (*User, error) {
                 var user User
                 var lockedUntil, lastFailedAt sql.NullTime
+                var inviteCode, invitedByUserID sql.NullString
+
                 err := d.queryRow(`
                         SELECT id, email, password_hash, otp_secret, otp_verified,
                                locked_until, failed_attempts, last_failed_at,
                                is_active, is_admin, beta_code,
+                               COALESCE(invite_code, ''), invited_by_user_id, COALESCE(invitation_level, 0),
                                created_at, updated_at
                         FROM users WHERE id = ?
                 `, userID).Scan(
                         &user.ID, &user.Email, &user.PasswordHash, &user.OTPSecret, &user.OTPVerified,
                         &lockedUntil, &user.FailedAttempts, &lastFailedAt,
                         &user.IsActive, &user.IsAdmin, &user.BetaCode,
+                        &inviteCode, &invitedByUserID, &user.InvitationLevel,
                         &user.CreatedAt, &user.UpdatedAt,
                 )
                 if err != nil {
@@ -1025,6 +1186,8 @@ func (d *Database) GetUserByID(userID string) (*User, error) {
                 if lastFailedAt.Valid {
                         user.LastFailedAt = &lastFailedAt.Time
                 }
+                user.InviteCode = inviteCode.String
+                user.InvitedByUserID = invitedByUserID.String
                 return &user, nil
         })
 }

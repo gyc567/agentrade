@@ -7,13 +7,14 @@ const API_BASE = getApiBaseUrl();
 interface User {
   id: string;
   email: string;
+  invite_code?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string; userID?: string; requiresOTP?: boolean }>;
-  register: (email: string, password: string, betaCode?: string) => Promise<{ success: boolean; message?: string; userID?: string; otpSecret?: string; qrCodeURL?: string }>;
+  register: (email: string, password: string, betaCode?: string, inviteCode?: string) => Promise<{ success: boolean; message?: string; userID?: string; otpSecret?: string; qrCodeURL?: string }>;
   verifyOTP: (userID: string, otpCode: string) => Promise<{ success: boolean; message?: string }>;
   completeRegistration: (userID: string, otpCode: string) => Promise<{ success: boolean; message?: string }>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>;
@@ -95,7 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         // 登录成功，保存token和用户信息
-        const userInfo = { id: data.user_id, email: data.email };
+        const userInfo: User = { 
+          id: data.user_id, 
+          email: data.email,
+          invite_code: data.invite_code 
+        };
         setToken(data.token);
         setUser(userInfo);
         localStorage.setItem('auth_token', data.token);
@@ -113,11 +118,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, betaCode?: string) => {
+  const register = async (email: string, password: string, betaCode?: string, inviteCode?: string) => {
     try {
-      const requestBody: { email: string; password: string; beta_code?: string } = { email, password };
+      const requestBody: { email: string; password: string; beta_code?: string; invite_code?: string } = { email, password };
       if (betaCode) {
         requestBody.beta_code = betaCode;
+      }
+      if (inviteCode) {
+        requestBody.invite_code = inviteCode;
       }
 
       const response = await fetch(`${API_BASE}/register`, {
@@ -133,7 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 检查业务逻辑是否成功（而不是HTTP状态）
       if (data.success) {
         // 注册成功，自动登录
-        const userInfo = { id: data.user.id, email: data.user.email };
+        const userInfo: User = { 
+          id: data.user.id, 
+          email: data.user.email,
+          invite_code: data.user.invite_code
+        };
         setToken(data.token);
         setUser(userInfo);
         localStorage.setItem('auth_token', data.token);

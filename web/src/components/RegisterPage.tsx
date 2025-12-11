@@ -14,6 +14,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [betaCode, setBetaCode] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [betaMode, setBetaMode] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -27,6 +28,13 @@ export function RegisterPage() {
     }).catch(err => {
       console.error('Failed to fetch system config:', err);
     });
+
+    // 从URL读取邀请码
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('inviteCode');
+    if (code) {
+      setInviteCode(code);
+    }
   }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -70,7 +78,7 @@ export function RegisterPage() {
         setTimeout(() => reject(new Error('请求超时，请检查网络连接')), 10000);
       });
 
-      const registerPromise = register(email, password, betaCode.trim() || undefined);
+      const registerPromise = register(email, password, betaCode.trim() || undefined, inviteCode.trim() || undefined);
 
       const result = await Promise.race([registerPromise, timeoutPromise]) as any;
 
@@ -254,6 +262,20 @@ export function RegisterPage() {
                   两次输入的密码不一致
                 </p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--brand-light-gray)' }}>
+                邀请码 (可选)
+              </label>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                className="w-full px-3 py-2 rounded"
+                style={{ background: 'var(--brand-black)', border: '1px solid var(--panel-border)', color: 'var(--brand-light-gray)' }}
+                placeholder="请输入邀请码"
+              />
             </div>
 
             {betaMode && (

@@ -29,11 +29,13 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^27.3.0",
     "node-fetch": "^3.3.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^4.0.15"
   },
   "description": "基于 Vite + React + TypeScript 的AI自动交易监控面板",
   "main": "index.js",
