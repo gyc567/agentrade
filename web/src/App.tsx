@@ -224,21 +224,7 @@ function App() {
     return <UserManualPage />;
   }
 
-  // 用户详情页面路由
-  if (route === '/profile') {
-    return (
-      <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0E11' }}>
-          <div className="text-center">
-            <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
-            <p style={{ color: '#EAECEF' }}>{t('loading', language)}</p>
-          </div>
-        </div>
-      }>
-        <UserProfilePage />
-      </Suspense>
-    );
-  }
+
 
   if (route === '/competition') {
     return (
@@ -291,6 +277,22 @@ function App() {
   if (!user || !token) {
     // Default to landing page when not authenticated and no specific route
     return <LandingPage />;
+  }
+
+  // 用户详情页面路由 (Authenticated)
+  if (route === '/profile') {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0E11' }}>
+          <div className="text-center">
+            <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+            <p style={{ color: '#EAECEF' }}>{t('loading', language)}</p>
+          </div>
+        </div>
+      }>
+        <UserProfilePage />
+      </Suspense>
+    );
   }
 
   return (
