@@ -1784,28 +1784,36 @@ func (s *Server) handleLogin(c *gin.Context) {
         // 获取用户信息
         user, err := s.database.GetUserByEmail(req.Email)
         if err != nil {
+                log.Printf("🔴 [LOGIN_FAILED] 用户不存在或查询错误: email=%s, error=%v", req.Email, err)
                 c.JSON(http.StatusUnauthorized, gin.H{"error": "邮箱或密码错误"})
                 return
         }
+
+        log.Printf("✓ [LOGIN_CHECK] 用户存在: email=%s, passwordHashExists=%t", user.Email, user.PasswordHash != "")
 
         // 验证密码
         if !auth.CheckPassword(req.Password, user.PasswordHash) {
+                log.Printf("🔴 [LOGIN_FAILED] 密码验证失败: email=%s", user.Email)
                 c.JSON(http.StatusUnauthorized, gin.H{"error": "邮箱或密码错误"})
                 return
         }
 
+        log.Printf("✅ [LOGIN_PASSWORD_OK] 密码验证成功: email=%s", user.Email)
+
         // 检查是否开启内测模式
         betaModeStr, _ := s.database.GetSystemConfig("beta_mode")
+        log.Printf("✓ [LOGIN_BETA_CHECK] 内测模式: %s", betaModeStr)
         if betaModeStr == "true" {
                 // 内测模式下，验证用户是否有有效的内测码
                 userBetaCode, err := s.database.GetUserBetaCode(user.ID)
                 if err != nil {
-                        log.Printf("⚠️ 获取用户内测码失败: %v", err)
+                        log.Printf("🔴 [LOGIN_FAILED] 获取用户内测码失败: email=%s, error=%v", user.Email, err)
                         c.JSON(http.StatusInternalServerError, gin.H{"error": "验证失败，请稍后重试"})
                         return
                 }
 
                 if userBetaCode == "" {
+                        log.Printf("🔴 [LOGIN_FAILED] 用户无内测码: email=%s", user.Email)
                         c.JSON(http.StatusUnauthorized, gin.H{"error": "内测码无效，请联系管理员"})
                         return
                 }
