@@ -3,7 +3,7 @@ package news
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"net/url" // Import for parsing URL
 	"testing"
 	"time"
 )
@@ -18,9 +18,25 @@ func TestMlionFetcher_FetchNews(t *testing.T) {
 			return
 		}
 
-		// Verify Query Param
-		if r.URL.Query().Get("is_hot") != "Y" {
-			t.Errorf("Expected query param is_hot=Y, got %s", r.URL.Query().Get("is_hot"))
+		// Verify Query Params (All new and old)
+		params := r.URL.Query()
+		if params.Get("language") != "cn" {
+			t.Errorf("Expected language=cn, got %s", params.Get("language"))
+		}
+		if params.Get("time_zone") != "Asia/Shanghai" {
+			t.Errorf("Expected time_zone=Asia/Shanghai, got %s", params.Get("time_zone"))
+		}
+		if params.Get("num") != "100" {
+			t.Errorf("Expected num=100, got %s", params.Get("num"))
+		}
+		if params.Get("page") != "1" {
+			t.Errorf("Expected page=1, got %s", params.Get("page"))
+		}
+		if params.Get("client") != "mlion" {
+			t.Errorf("Expected client=mlion, got %s", params.Get("client"))
+		}
+		if params.Get("is_hot") != "Y" {
+			t.Errorf("Expected is_hot=Y, got %s", params.Get("is_hot"))
 		}
 
 		// Return Mock JSON
@@ -46,9 +62,19 @@ func TestMlionFetcher_FetchNews(t *testing.T) {
 
 	// Init Fetcher
 	fetcher := NewMlionFetcher("test-key")
-	// Manually ensure the base URL for the test matches the production expectation of having the query param
-	// This simulates that NewMlionFetcher would normally provide a URL with this param.
-	fetcher.baseURL = ts.URL + "?is_hot=Y"
+	// Manually ensure the base URL for the test matches the production expectation of having all query params.
+	// We use url.Parse and Add to properly handle parameters when overriding base.
+	u, _ := url.Parse(ts.URL)
+	q := u.Query()
+	q.Set("language", "cn")
+	q.Set("time_zone", "Asia/Shanghai")
+	q.Set("num", "100")
+	q.Set("page", "1")
+	q.Set("client", "mlion")
+	q.Set("is_hot", "Y")
+	u.RawQuery = q.Encode()
+	fetcher.baseURL = u.String()
+
 
 	// Test Fetch
 	articles, err := fetcher.FetchNews("crypto")
@@ -75,7 +101,25 @@ func TestMlionFetcher_FetchNews(t *testing.T) {
 
 func TestMlionFetcher_Constant(t *testing.T) {
 	f := NewMlionFetcher("key")
-	if !strings.Contains(f.baseURL, "is_hot=Y") {
-		t.Errorf("Production BaseURL MUST contain is_hot=Y, got: %s", f.baseURL)
+	
+	expectedParams := map[string]string{
+		"language":   "cn",
+		"time_zone":  "Asia/Shanghai",
+		"num":        "100",
+		"page":       "1",
+		"client":     "mlion",
+		"is_hot":     "Y",
+	}
+
+	u, err := url.Parse(f.baseURL)
+	if err != nil {
+		t.Fatalf("Failed to parse baseURL: %v", err)
+	}
+	params := u.Query()
+
+	for key, expectedValue := range expectedParams {
+		if params.Get(key) != expectedValue {
+			t.Errorf("baseURL missing or incorrect param: %s. Expected '%s', got '%s'", key, expectedValue, params.Get(key))
+		}
 	}
 }

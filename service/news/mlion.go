@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// 强制启用 is_hot=Y 过滤
-const mlionBaseURL = "https://api.mlion.ai/v2/api/news/real/time?is_hot=Y"
+// 强制启用 is_hot=Y 过滤，并添加其他参数
+const mlionBaseURL = "https://api.mlion.ai/v2/api/news/real/time?language=cn&time_zone=Asia%2FShanghai&num=100&page=1&client=mlion&is_hot=Y"
 
 // MlionFetcher 实现 Fetcher 接口
 type MlionFetcher struct {
@@ -49,7 +49,7 @@ func (m *MlionFetcher) Name() string {
 
 // FetchNews 从 Mlion 获取新闻
 func (m *MlionFetcher) FetchNews(category string) ([]Article, error) {
-	// 直接使用 baseURL (已包含 is_hot=Y)
+	// 直接使用 baseURL (已包含所有参数)
 	req, err := http.NewRequest("GET", m.baseURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
