@@ -16,7 +16,6 @@ type Service struct {
 	fetchers       []Fetcher      // 支持多个 Fetcher
 	topicRouter    map[string]int // 路由表: Source Name -> Telegram Topic ID
 	notifier       Notifier
-	aiProcessor    AIProcessor
 	enabled        bool
 	sentArticleIDs map[int64]bool // 全局消息ID去重集合
 }
@@ -109,25 +108,11 @@ func (s *Service) loadConfig() error {
 		s.topicRouter["Mlion"] = tid
 	}
 
-	// --- AI Config ---
-	deepseekKey, _ := s.store.GetSystemConfig("deepseek_api_key")
-	deepseekURL, _ := s.store.GetSystemConfig("deepseek_api_url")
-	targetLang, _ := s.store.GetSystemConfig("news_language")
-	if targetLang == "" {
-		targetLang = "zh-CN"
-	}
-
 	if botToken == "" || chatID == "" {
 		return fmt.Errorf("缺少必要的 Telegram 配置")
 	}
 
 	s.notifier = NewTelegramNotifier(botToken, chatID)
-
-	if deepseekKey != "" {
-		s.aiProcessor = NewDeepSeekProcessor(deepseekKey, deepseekURL, targetLang)
-	} else {
-		s.aiProcessor = nil
-	}
 
 	return nil
 }
@@ -215,14 +200,7 @@ func (s *Service) ProcessFetcher(f Fetcher, category string) error {
 	for i := range newArticles {
 		a := &newArticles[i]
 
-		// AI 处理
-		if s.aiProcessor != nil {
-			log.Printf("🤖 AI 正在处理新闻 [%s]: %s", f.Name(), a.Headline)
-			if err := s.aiProcessor.Process(a); err != nil {
-				log.Printf("⚠️ AI 处理失败: %v", err)
-				a.AIProcessed = false
-			}
-		}
+		// 原 AI 处理逻辑已移除
 
 		msg := formatMessage(*a)
 
@@ -267,24 +245,7 @@ func formatMessage(a Article) string {
         sourceTag = fmt.Sprintf(" | %s", a.Source)
     }
 
-	if a.AIProcessed {
-		sentimentIcon := ""
-		switch a.Sentiment {
-		case "POSITIVE":
-			sentimentIcon = "🟢"
-		case "NEGATIVE":
-			sentimentIcon = "🔴"
-		default:
-			sentimentIcon = "⚪"
-		}
-
-		return fmt.Sprintf("<b>%s %s %s</b>\n\n📅 %s | #%s%s\n\n📝 <b>摘要</b>: %s\n\n---------------\n原文: <a href=\" %s \">%s</a>",
-			icon, a.TranslatedHeadline, sentimentIcon,
-			timeStr, strings.ToUpper(a.Category), sourceTag,
-			a.TranslatedSummary,
-			a.URL, a.Headline)
-	}
-
+	// 原 AI 处理逻辑分支已移除，只保留原生格式
 	headline := strings.ReplaceAll(a.Headline, "<", "&lt;")
 	headline = strings.ReplaceAll(headline, ">", "&gt;")
 	summary := strings.ReplaceAll(a.Summary, "<", "&lt;")
