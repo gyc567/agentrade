@@ -64,7 +64,8 @@ func TestMlionFetcher_FetchNews(t *testing.T) {
 	}
 	
 	// Verify Time Parsing
-	expectedTime, _ := time.Parse("2006-01-02 15:04:05", "2025-12-15 12:00:00")
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	expectedTime, _ := time.ParseInLocation("2006-01-02 15:04:05", "2025-12-15 12:00:00", loc)
 	if a.Datetime != expectedTime.Unix() {
 		t.Errorf("Expected timestamp %d, got %d", expectedTime.Unix(), a.Datetime)
 	}

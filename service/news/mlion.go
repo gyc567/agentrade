@@ -79,11 +79,16 @@ func (m *MlionFetcher) FetchNews(category string) ([]Article, error) {
 	}
 
 	var articles []Article
-	// loc, _ := time.LoadLocation("Asia/Shanghai") // Unused
-    
+	
+	// Mlion API uses Beijing Time (UTC+8)
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		loc = time.FixedZone("CST", 8*3600) // Fallback to fixed offset if DB missing
+	}
+
 	for _, item := range result.Data {
-		// Parse Time
-		t, err := time.Parse("2006-01-02 15:04:05", item.CreateTime)
+		// Parse Time in Beijing Time
+		t, err := time.ParseInLocation("2006-01-02 15:04:05", item.CreateTime, loc)
 		if err != nil {
 			// Try adding simple recovery or skip
 			continue

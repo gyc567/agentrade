@@ -246,7 +246,12 @@ func (s *Service) ProcessFetcher(f Fetcher, category string) error {
 }
 
 func formatMessage(a Article) string {
-	t := time.Unix(a.Datetime, 0)
+	// Ensure display in Beijing Time
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		loc = time.FixedZone("CST", 8*3600)
+	}
+	t := time.Unix(a.Datetime, 0).In(loc)
 	timeStr := t.Format("15:04")
 
 	var icon string
