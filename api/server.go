@@ -956,8 +956,31 @@ func (s *Server) handleGetModelConfigs(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("获取AI模型配置失败: %v", err)})
 		return
 	}
-	log.Printf("✅ 找到 %d 个AI模型配置", len(models))
+	// 注入平台默认DeepSeek模型（如果已配置）
+	sysKey, _ := s.database.GetSystemConfig("deepseek_api_key")
+	if sysKey != "" {
+		platformDeepSeek := &config.AIModelConfig{
+			ID:       "platform_deepseek",
+			UserID:   "system",
+			Name:     "Platform DeepSeek",
+			Provider: "deepseek",
+			Enabled:  true,
+			APIKey:   "platform_managed", // 前端检测到key存在即认为已配置，实际使用时会替换
+		}
+		// 检查是否已存在同名ID（理论上不会，因为ID不同，但防止重复显示）
+		exists := false
+		for _, m := range models {
+			if m.ID == "platform_deepseek" {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			models = append(models, platformDeepSeek)
+		}
+	}
 
+	log.Printf("✅ 找到 %d 个AI模型配置", len(models))
 	c.JSON(http.StatusOK, models)
 }
 

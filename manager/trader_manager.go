@@ -925,7 +925,18 @@ func (tm *TraderManager) loadSingleTrader(traderCfg *config.TraderRecord, aiMode
 	if aiModelCfg.Provider == "qwen" {
 		traderConfig.QwenKey = aiModelCfg.APIKey
 	} else if aiModelCfg.Provider == "deepseek" {
-		traderConfig.DeepSeekKey = aiModelCfg.APIKey
+		if aiModelCfg.ID == "platform_deepseek" || aiModelCfg.APIKey == "platform_managed" {
+			// 加载平台配置
+			key, _ := database.GetSystemConfig("deepseek_api_key")
+			url, _ := database.GetSystemConfig("deepseek_api_url")
+			traderConfig.DeepSeekKey = key
+			if url != "" {
+				traderConfig.CustomAPIURL = url
+			}
+			log.Printf("🤖 [%s] 使用平台DeepSeek配置", traderCfg.Name)
+		} else {
+			traderConfig.DeepSeekKey = aiModelCfg.APIKey
+		}
 	}
 
 	// 创建trader实例
