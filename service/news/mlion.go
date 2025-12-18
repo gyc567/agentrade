@@ -19,7 +19,11 @@ type MlionFetcher struct {
 
 // MlionResponse 对应 API 响应结构
 type MlionResponse struct {
-	Code int             `json:"code"`
+	Code int              `json:"code"`
+	Data MlionDataWrapper `json:"data"`
+}
+
+type MlionDataWrapper struct {
 	Data []MlionNewsItem `json:"data"`
 }
 
@@ -84,7 +88,7 @@ func (m *MlionFetcher) FetchNews(category string) ([]Article, error) {
 		loc = time.FixedZone("CST", 8*3600) // Fallback to fixed offset if DB missing
 	}
 
-	for _, item := range result.Data {
+	for _, item := range result.Data.Data {
 		// Parse Time in Beijing Time
 		t, err := time.ParseInLocation("2006-01-02 15:04:05", item.CreateTime, loc)
 		if err != nil {

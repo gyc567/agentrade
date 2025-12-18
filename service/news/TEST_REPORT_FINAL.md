@@ -124,3 +124,16 @@
     *   API 调用: HTTP 200 OK
     *   Telegram 响应: 成功 (`{"ok":true, ...}`)
     *   结论: ✅ 验证通过。系统具备向指定 Topic 发送消息的完整能力。
+
+---
+
+## 10. Mlion API 解析故障修复 (2025-12-18)
+*   **故障现象**: 接口连通性测试通过，但无法提取新闻内容，导致无消息发送。
+*   **原因分析**: Mlion API 返回的 JSON 结构中 `data` 字段为嵌套对象（`{"data": {"data": [...]}}`），而代码中定义的 `MlionResponse` 结构体期望 `data` 直接为数组（`{"data": [...]}`），导致 `json.Unmarshal` 失败。
+*   **修复措施**:
+    1.  修改 `MlionResponse` 结构体，增加 `MlionDataWrapper` 中间层。
+    2.  更新 `FetchNews` 方法，访问嵌套的 `Data` 切片。
+    3.  同步更新 `mlion_test.go` 和 `news_integration_test.go` 中的 Mock 数据结构。
+*   **验证**:
+    *   创建复现测试 `mlion_repro_test.go`，修复前失败，修复后通过。
+    *   执行全量测试 `go test -v ./service/news`，全部通过。

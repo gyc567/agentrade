@@ -58,8 +58,10 @@ func TestMlion_Integration(t *testing.T) {
 		assert.Equal(t, "mlion-key", r.Header.Get("X-API-KEY"))
 		resp := MlionResponse{
 			Code: 200,
-			Data: []MlionNewsItem{
-				{NewsID: 999, Title: "Mlion News", Content: "Content", CreateTime: "2025-01-01 12:00:00"},
+			Data: MlionDataWrapper{
+				Data: []MlionNewsItem{
+					{NewsID: 999, Title: "Mlion News", Content: "Content", CreateTime: "2025-01-01 12:00:00"},
+				},
 			},
 		}
 		json.NewEncoder(w).Encode(resp)

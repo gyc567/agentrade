@@ -42,17 +42,19 @@ func TestMlionFetcher_FetchNews(t *testing.T) {
 		// Return Mock JSON
 		response := `{
 			"code": 200,
-			"data": [
-				{
-					"news_id": 12345,
-					"title": "Test News",
-					"content": "Test Content",
-					"url": "http://test.com",
-					"createTime": "2025-12-15 12:00:00",
-					"sentiment": 0,
-					"symbol": "BTC"
-				}
-			]
+			"data": {
+				"data": [
+					{
+						"news_id": 12345,
+						"title": "Test News",
+						"content": "Test Content",
+						"url": "http://test.com",
+						"createTime": "2025-12-15 12:00:00",
+						"sentiment": 0,
+						"symbol": "BTC"
+					}
+				]
+			}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
