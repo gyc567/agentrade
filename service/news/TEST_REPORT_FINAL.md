@@ -106,3 +106,8 @@
     *   **发现**: 代码中未发现自动加载 `.env` 或 `.env.local` 文件的逻辑 (如 `godotenv.Load`)。
     *   **实际配置源**: Key 已硬编码在数据库迁移文件 `database/migrations/20251215_mlion_news_config.sql` 中，并作为默认值注入数据库。
     *   **建议**: 若需通过环境变量动态覆盖 Key，需修改 `service/news/service.go` 的 `loadConfig` 方法，增加 `os.Getenv` 的回退读取逻辑。
+
+### 生产环境数据库验证
+*   **操作**: 连接生产环境 PostgreSQL 数据库，直接查询 `system_config` 表。
+*   **SQL**: `SELECT value FROM system_config WHERE key = 'mlion_api_key'`
+*   **结果**: ✅ 验证通过。数据库中存储的值与预期的 Key (`c559b9a8-80c2-4c17-8c31-bb7659b12b52`) 完全一致。
