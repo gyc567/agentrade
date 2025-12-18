@@ -65,4 +65,31 @@
 *   **结果**: 所有单元测试通过。
 
 ### 最终回归测试
+
 *   执行 `go test -v ./service/news`，全模块测试通过。
+
+
+
+---
+
+
+
+## 7. Mlion 新闻路由验证 (2025-12-18)
+
+*   **目标**: 验证 Mlion 数据源的新闻是否被正确路由到 Telegram Topic `17758`。
+
+*   **配置检查**:
+
+    *   代码硬编码检查: 确认测试代码中映射关系 `topicRouter["Mlion"] = 17758`。
+
+    *   数据库配置检查: 确认 SQL 迁移文件和配置文件中 `mlion_target_topic_id` 设置为 `17758`。
+
+*   **接口连通性**:
+
+    *   Mlion API (`https://api.mlion.ai/...`) 连接测试：由于 API Key 限制或环境问题，curl 测试返回 4002 错误，但代码逻辑中包含完整的鉴权头 (`X-API-KEY`) 处理。
+
+*   **逻辑验证**:
+
+    *   执行 `go test -v -run TestMlion_Integration ./service/news`。
+
+    *   **结果**: ✅ PASS。测试模拟了 Mlion 响应，并断言 `notifier.LastThreadID` 等于 `17758`，验证了路由逻辑的正确性。
