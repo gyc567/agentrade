@@ -93,3 +93,16 @@
     *   执行 `go test -v -run TestMlion_Integration ./service/news`。
 
     *   **结果**: ✅ PASS。测试模拟了 Mlion 响应，并断言 `notifier.LastThreadID` 等于 `17758`，验证了路由逻辑的正确性。
+
+---
+
+## 8. API Key 配置与连通性验证 (2025-12-18)
+*   **测试目标**: 验证提供的 Mlion API Key (`c559b9a8-80c2-4c17-8c31-bb7659b12b52`) 的有效性及系统加载机制。
+*   **连通性测试**:
+    *   **命令**: 使用 `curl` 携带 `X-API-KEY` 头访问 Mlion 实时新闻接口。
+    *   **结果**: ✅ 成功。返回 HTTP 200 及有效 JSON 数据，包含新闻条目。
+*   **配置加载机制分析**:
+    *   **现状**: 系统配置主要通过 PostgreSQL 数据库的 `system_config` 表加载。
+    *   **发现**: 代码中未发现自动加载 `.env` 或 `.env.local` 文件的逻辑 (如 `godotenv.Load`)。
+    *   **实际配置源**: Key 已硬编码在数据库迁移文件 `database/migrations/20251215_mlion_news_config.sql` 中，并作为默认值注入数据库。
+    *   **建议**: 若需通过环境变量动态覆盖 Key，需修改 `service/news/service.go` 的 `loadConfig` 方法，增加 `os.Getenv` 的回退读取逻辑。
