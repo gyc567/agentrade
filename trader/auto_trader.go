@@ -270,19 +270,49 @@ func (at *AutoTrader) Run() error {
 	log.Printf("⚙️  扫描间隔: %v", at.config.ScanInterval)
 	log.Println("🤖 AI将全权决定杠杆、仓位大小、止损止盈等参数")
 
+	// P0修复: 配置验证 - 确保ScanInterval不会异常小
+	if at.config.ScanInterval < 1*time.Minute {
+		log.Printf("⚠️ [P0] 扫描间隔异常小 (%v)，重置为30分钟", at.config.ScanInterval)
+		at.config.ScanInterval = 30 * time.Minute
+	}
+	if at.config.ScanInterval > 24*time.Hour {
+		log.Printf("⚠️ [P0] 扫描间隔异常大 (%v)，重置为30分钟", at.config.ScanInterval)
+		at.config.ScanInterval = 30 * time.Minute
+	}
+	log.Printf("✅ [P0] 扫描间隔验证通过: %v", at.config.ScanInterval)
+
 	ticker := time.NewTicker(at.config.ScanInterval)
 	defer ticker.Stop()
 
 	// 首次立即执行
+	cycleStartTime := time.Now()
+	log.Printf("⏱️  周期 #%d 开始执行 (首次立即执行)", at.callCount+1)
 	if err := at.runCycle(); err != nil {
-		log.Printf("❌ 执行失败: %v", err)
+		log.Printf("❌ 周期 #%d 执行失败: %v", at.callCount, err)
+	} else {
+		elapsed := time.Since(cycleStartTime)
+		log.Printf("✅ 周期 #%d 执行完成，耗时: %v", at.callCount, elapsed)
+		// P1修复: 执行时间监控
+		if elapsed > at.config.ScanInterval/2 {
+			log.Printf("⚠️ [P1] 周期执行耗时过长 (%v)，已接近 ScanInterval，可能导致周期压缩", elapsed)
+		}
 	}
 
 	for at.isRunning {
 		select {
 		case <-ticker.C:
+			cycleStartTime := time.Now()
+			log.Printf("⏱️  周期 #%d 开始执行 (Ticker驱动)", at.callCount+1)
+
 			if err := at.runCycle(); err != nil {
-				log.Printf("❌ 执行失败: %v", err)
+				log.Printf("❌ 周期 #%d 执行失败: %v", at.callCount, err)
+			} else {
+				elapsed := time.Since(cycleStartTime)
+				log.Printf("✅ 周期 #%d 执行完成，耗时: %v", at.callCount, elapsed)
+				// P1修复: 执行时间监控
+				if elapsed > at.config.ScanInterval/2 {
+					log.Printf("⚠️ [P1] 周期执行耗时过长 (%v)，已接近 ScanInterval，可能导致周期压缩", elapsed)
+				}
 			}
 		}
 	}
@@ -332,7 +362,10 @@ func (at *AutoTrader) runCycle() error {
 			record.Success = false
 			record.ErrorMessage = errorMsg
 			at.decisionLogger.LogDecision(record)
-			return fmt.Errorf("积分不足: %w", err)
+
+			// P1修复: 积分失败时的处理
+			log.Printf("⚠️ [P1] 积分不足，跳过本周期 #%d，等待下一个 Ticker 信号（不会立即重试）", at.callCount)
+			return fmt.Errorf("积分不足: %w", err)  // 返回错误，不会重新调度
 		}
 		log.Printf("✅ TopTrader: 成功消耗 %d 积分", cost)
 		record.ExecutionLog = append(record.ExecutionLog, fmt.Sprintf("💳 消耗 %d 积分", cost))

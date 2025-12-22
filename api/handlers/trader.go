@@ -133,9 +133,18 @@ func (h *BaseHandler) HandleCreateTrader(c *gin.Context) {
 
 	// 设置扫描间隔默认值
 	scanIntervalMinutes := req.ScanIntervalMinutes
-	if scanIntervalMinutes <= 0 {
-		scanIntervalMinutes = 3 // 默认3分钟
+
+	// P0修复: TopTrader特殊处理 - 强制设为30分钟
+	if req.Name == "TopTrader" || strings.Contains(req.Name, "TopTrader") {
+		if scanIntervalMinutes != 30 {
+			log.Printf("⚠️ [P0] TopTrader 扫描间隔被设为 %d 分钟，调整为标准 30 分钟", scanIntervalMinutes)
+			scanIntervalMinutes = 30
+		}
+	} else if scanIntervalMinutes <= 0 {
+		scanIntervalMinutes = 3 // 其他Trader的默认值3分钟
 	}
+
+	log.Printf("✅ [P0] %s 扫描间隔设置为: %d 分钟", req.Name, scanIntervalMinutes)
 
 	// 创建交易员配置（数据库实体）
 	trader := &config.TraderRecord{
@@ -249,6 +258,16 @@ func (h *BaseHandler) HandleUpdateTrader(c *gin.Context) {
 	if scanIntervalMinutes <= 0 {
 		scanIntervalMinutes = existingTrader.ScanIntervalMinutes // 保持原值
 	}
+
+	// P0修复: TopTrader特殊处理 - 强制设为30分钟
+	if existingTrader.Name == "TopTrader" || strings.Contains(existingTrader.Name, "TopTrader") {
+		if scanIntervalMinutes != 30 {
+			log.Printf("⚠️ [P0] TopTrader 扫描间隔被设为 %d 分钟，调整为标准 30 分钟", scanIntervalMinutes)
+			scanIntervalMinutes = 30
+		}
+	}
+
+	log.Printf("✅ [P0] %s 扫描间隔设置为: %d 分钟", existingTrader.Name, scanIntervalMinutes)
 
 	// 更新交易员配置
 	trader := &config.TraderRecord{
