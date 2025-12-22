@@ -7,6 +7,7 @@ import (
 	"nofx/market"
 	"nofx/mcp"
 	"nofx/pool"
+	"nofx/service/news"
 	"strings"
 	"time"
 )
@@ -108,6 +109,20 @@ func GetFullDecisionWithCustomPrompt(ctx *Context, mcpClient *mcp.Client, custom
 	// 2. 检查是否获取到了任何市场数据（包括持仓和候选币种）
 	if len(ctx.MarketDataMap) == 0 {
 		return nil, fmt.Errorf("没有提供具体的价格数据和指标数据，无法进行技术分析")
+	}
+
+	// 【P0修复】: 激活新闻enrichment - 将新闻数据添加到Context
+	// 尝试使用Mlion新闻API来enrichment上下文
+	mlionFetcher := &news.MlionFetcher{}  // 创建Mlion fetcher实例
+	newsEnricher := NewNewsEnricher(mlionFetcher)
+
+	if newsEnricher.IsEnabled(ctx) {
+		if err := newsEnricher.Enrich(ctx); err != nil {
+			log.Printf("⚠️ 新闻enrichment失败: %v (继续执行，不影响决策)", err)
+			// Fail-safe: 新闻获取失败不影响交易流程
+		} else {
+			log.Printf("✅ 新闻数据已成功enriched到Context中")
+		}
 	}
 
 	// 3. 构建 System Prompt（固定规则）和 User Prompt（动态数据）
@@ -682,6 +697,70 @@ func buildUserPrompt(ctx *Context) string {
 					sb.WriteString("\n")
 				}
 			}
+		}
+	}
+
+	// 【P0修复】: 添加新闻信息部分 - 基本面分析
+	if newsCtx, ok := ctx.GetExtension("news"); ok {
+		if newsContext, isNewsCtx := newsCtx.(*NewsContext); isNewsCtx && newsContext != nil && newsContext.Enabled && len(newsContext.Articles) > 0 {
+			sb.WriteString("## 📰 市场新闻与情绪分析\n\n")
+
+			// 平均情绪指标
+			sentimentLabel := "➡️ 中性"
+			sentimentColor := "中性"
+			if newsContext.SentimentAvg > 0.2 {
+				sentimentLabel = "✅ 正面"
+				sentimentColor = "正面看涨"
+			} else if newsContext.SentimentAvg < -0.2 {
+				sentimentLabel = "⚠️ 负面"
+				sentimentColor = "负面看跌"
+			}
+
+			sb.WriteString(fmt.Sprintf("**整体市场情绪**: %s (平均值: %+.2f, 范围: -1.0 负面 ~ +1.0 正面)\n",
+				sentimentLabel, newsContext.SentimentAvg))
+			sb.WriteString(fmt.Sprintf("**情绪解读**: %s - AI应该考虑这个基本面信号\n\n", sentimentColor))
+
+			// 最新新闻头条（Top 5）
+			if len(newsContext.Articles) > 0 {
+				sb.WriteString("**最新新闻 (Top 5 热点)**:\n\n")
+				maxArticles := len(newsContext.Articles)
+				if maxArticles > 5 {
+					maxArticles = 5
+				}
+
+				for i := 0; i < maxArticles; i++ {
+					article := newsContext.Articles[i]
+					articleSentimentLabel := "➡️ 中性"
+					if article.Sentiment > 0 {
+						articleSentimentLabel = "✅ 正面"
+					} else if article.Sentiment < 0 {
+						articleSentimentLabel = "⚠️ 负面"
+					}
+
+					symbolTag := ""
+					if article.Symbol != "" {
+						symbolTag = fmt.Sprintf(" [币种: %s]", article.Symbol)
+					}
+
+					sb.WriteString(fmt.Sprintf("%d. [%s] %s%s\n", i+1, articleSentimentLabel, article.Headline, symbolTag))
+				}
+				sb.WriteString("\n")
+			}
+
+			// 情绪对决策的影响建议
+			sb.WriteString("### 💡 新闻情绪对AI决策的影响:\n")
+			if newsContext.SentimentAvg > 0.3 {
+				sb.WriteString("✅ 市场情绪强烈正面 - 可以提高仓位大小和杠杆，增加开仓信心\n")
+			} else if newsContext.SentimentAvg > 0.1 {
+				sb.WriteString("✅ 市场情绪温和正面 - 可以适度增加仓位，但保持风控\n")
+			} else if newsContext.SentimentAvg < -0.3 {
+				sb.WriteString("⚠️ 市场情绪强烈负面 - 建议降低杠杆、减少仓位，优先止损\n")
+			} else if newsContext.SentimentAvg < -0.1 {
+				sb.WriteString("⚠️ 市场情绪温和负面 - 建议保持谨慎，优先管理风险\n")
+			} else {
+				sb.WriteString("➡️ 市场情绪中性 - 按照技术面和历史表现决策\n")
+			}
+			sb.WriteString("\n")
 		}
 	}
 
