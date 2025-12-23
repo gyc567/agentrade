@@ -1,0 +1,362 @@
+{
+  "dashboard": {
+    "title": "Mem0 Trading AI - Phase 2.1 Monitoring",
+    "description": "Real-time monitoring for Mem0 memory layer integration with P0 fixes (CacheWarmer, CircuitBreaker, VersionManager, MetricsCollector)",
+    "tags": ["mem0", "trading-ai", "phase-2.1", "monitoring"],
+    "timezone": "UTC",
+    "panels": [
+      {
+        "id": 1,
+        "title": "📊 Request Latency (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nofx_request_latency_p95_ms",
+            "legendFormat": "P95 Latency (ms)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "short"
+          }
+        ],
+        "thresholds": "500",
+        "alert": {
+          "name": "P95 Latency Alert",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [500],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "1m",
+          "handler": 1,
+          "message": "P95 Latency exceeded 500ms (target: <500ms for Phase 2.1 validation)",
+          "name": "P95 Latency Alert",
+          "noDataState": "no_data",
+          "notificationUid": "prometheus_alerts"
+        }
+      },
+      {
+        "id": 2,
+        "title": "💾 Cache Hit Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "nofx_cache_hit_rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "green",
+                "value": 85
+              }
+            ]
+          }
+        },
+        "unit": "percent",
+        "alert": {
+          "name": "Cache Hit Rate Alert",
+          "message": "Cache hit rate below 70% (target: >70% for Phase 2.1 validation)",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [70],
+                "type": "lt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "10m", "now"]
+              }
+            }
+          ],
+          "for": "5m",
+          "frequency": "1m"
+        }
+      },
+      {
+        "id": 3,
+        "title": "🔌 Circuit Breaker Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "nofx_circuit_breaker_trips",
+            "legendFormat": "Trips",
+            "refId": "A"
+          },
+          {
+            "expr": "nofx_circuit_breaker_recoveries",
+            "legendFormat": "Recoveries",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "orientation": "auto",
+          "textMode": "auto",
+          "reduction": {
+            "values": false,
+            "fields": "",
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "custom": {
+          "hideFrom": {
+            "tooltip": false,
+            "viz": false,
+            "legend": false
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "❌ Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nofx_error_rate",
+            "legendFormat": "Error Rate (%)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Error Rate (%)",
+            "format": "percent"
+          }
+        ],
+        "thresholds": "5",
+        "alert": {
+          "name": "Error Rate Alert",
+          "message": "Error rate exceeded 5% threshold",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "title": "🌐 API Latency (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nofx_api_latency_p95_ms",
+            "legendFormat": "API P95 (ms)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "📈 Total Requests",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "nofx_request_count",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "orientation": "auto",
+          "textMode": "auto",
+          "reduction": {
+            "values": false,
+            "fields": "",
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "custom": {
+          "hideFrom": {
+            "tooltip": false,
+            "viz": false,
+            "legend": false
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "⏱️ Uptime",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "nofx_uptime_seconds / 3600",
+            "legendFormat": "Hours",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "orientation": "auto",
+          "textMode": "auto"
+        },
+        "unit": "h"
+      },
+      {
+        "id": 8,
+        "title": "🔄 Request Percentiles",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nofx_request_latency_p50_ms",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "nofx_request_latency_p95_ms",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "nofx_request_latency_p99_ms",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "short"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "🎯 Phase 2.1 Validation KPIs",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "nofx_cache_hit_rate >= 70 and nofx_request_latency_p95_ms < 500 and nofx_circuit_breaker_trips > 0",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showHeader": true
+        }
+      },
+      {
+        "id": 10,
+        "title": "💾 Cache Statistics",
+        "type": "pieChart",
+        "targets": [
+          {
+            "expr": "nofx_cache_hit_rate",
+            "legendFormat": "Hit Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "fields": "",
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "value"],
+          "tooltip": {
+            "mode": "single"
+          }
+        }
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 36,
+    "style": "dark",
+    "templating": {
+      "list": [
+        {
+          "name": "interval",
+          "type": "interval",
+          "current": {
+            "text": "30s",
+            "value": "30s"
+          },
+          "options": [
+            {
+              "text": "30s",
+              "value": "30s"
+            },
+            {
+              "text": "1m",
+              "value": "1m"
+            },
+            {
+              "text": "5m",
+              "value": "5m"
+            },
+            {
+              "text": "1h",
+              "value": "1h"
+            }
+          ]
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "uid": "mem0-phase2.1-monitoring",
+    "version": 1
+  }
+}
