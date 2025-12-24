@@ -153,3 +153,144 @@ func BenchmarkMem0ModelWithFallback(b *testing.B) {
 		factory.CreateWithFallback(cfg.UnderstandingModel, cfg.FallbackModel)
 	}
 }
+
+// TestGetFullDecisionV2WithAIModel 测试GetFullDecisionV2与AI模型的集成
+func TestGetFullDecisionV2WithAIModel(t *testing.T) {
+	// 1. 创建Mem0配置(使用mock模型)
+	cfg := &Config{
+		Enabled:            true,
+		UnderstandingModel: "mock", // 使用Mock模型进行测试
+		FallbackModel:      "mock",
+		CacheTTLMinutes:    30,
+	}
+
+	// 2. 创建所有必要的组件
+	store := &MockMemoryStore{}
+	compressor := NewContextCompressor(700)
+	kb := NewGlobalKnowledgeBase(store)
+	raf := NewRiskAwareFormatter()
+	sm := NewStageManager()
+	warmer := NewCacheWarmer(store, 0, 0) // 禁用预热以加速测试
+
+	// 3. 创建GetFullDecisionV2并注入AI模型
+	gfd, err := NewGetFullDecisionV2(store, compressor, kb, raf, sm, warmer, cfg)
+	if err != nil {
+		t.Fatalf("❌ Failed to create GetFullDecisionV2 with AI model: %v", err)
+	}
+
+	if gfd == nil {
+		t.Fatal("❌ GetFullDecisionV2 instance is nil")
+	}
+
+	// 4. 验证模型已正确注入
+	if gfd.model == nil {
+		t.Fatal("❌ AI model not injected into GetFullDecisionV2")
+	}
+
+	modelInfo := gfd.model.GetModelInfo()
+	if modelInfo.Name != "mock-model" {
+		t.Errorf("❌ Expected model name 'mock-model', got %s", modelInfo.Name)
+	}
+
+	// 5. 测试决策生成流程
+	ctx := context.Background()
+	query := Query{
+		Type:  "semantic_search",
+		Limit: 5,
+	}
+
+	decision, err := gfd.GenerateDecision(ctx, query)
+	if err != nil {
+		t.Fatalf("❌ Failed to generate decision: %v", err)
+	}
+
+	// 6. 验证决策结果
+	if decision.Model != cfg.UnderstandingModel {
+		t.Errorf("❌ Expected model %s in decision, got %s", cfg.UnderstandingModel, decision.Model)
+	}
+
+	if decision.Recommendation == "" {
+		t.Fatal("❌ Decision recommendation should not be empty")
+	}
+
+	if decision.Confidence < 0 || decision.Confidence > 1 {
+		t.Errorf("❌ Confidence should be between 0 and 1, got %.2f", decision.Confidence)
+	}
+
+	t.Logf("✅ GetFullDecisionV2 with AI model integration test passed")
+	t.Logf("   Model: %s", decision.Model)
+	t.Logf("   Confidence: %.2f", decision.Confidence)
+	t.Logf("   Recommendation preview: %.0s", decision.Recommendation)
+}
+
+// TestGetFullDecisionV2ModelFallback 测试GetFullDecisionV2的模型降级机制
+func TestGetFullDecisionV2ModelFallback(t *testing.T) {
+	// 1. 创建配置:主模型失败,降级到mock
+	cfg := &Config{
+		Enabled:            true,
+		UnderstandingModel: "unsupported-model", // 不支持的模型
+		FallbackModel:      "mock",               // 降级到mock
+	}
+
+	// 2. 创建GetFullDecisionV2
+	store := &MockMemoryStore{}
+	compressor := NewContextCompressor(700)
+	kb := NewGlobalKnowledgeBase(store)
+	raf := NewRiskAwareFormatter()
+	sm := NewStageManager()
+	warmer := NewCacheWarmer(store, 0, 0)
+
+	gfd, err := NewGetFullDecisionV2(store, compressor, kb, raf, sm, warmer, cfg)
+	if err != nil {
+		t.Fatalf("❌ Failed to create GetFullDecisionV2: %v", err)
+	}
+
+	// 3. 验证降级到了mock模型
+	modelInfo := gfd.model.GetModelInfo()
+	if modelInfo.Name != "mock-model" {
+		t.Errorf("❌ Should fallback to mock model, got %s", modelInfo.Name)
+	}
+
+	// 4. 验证决策仍然可以正常生成
+	ctx := context.Background()
+	query := Query{Type: "semantic_search", Limit: 5}
+
+	decision, err := gfd.GenerateDecision(ctx, query)
+	if err != nil {
+		t.Fatalf("❌ Failed to generate decision after fallback: %v", err)
+	}
+
+	if decision.Recommendation == "" {
+		t.Fatal("❌ Fallback model should still generate recommendations")
+	}
+
+	t.Logf("✅ Model fallback test passed")
+	t.Logf("   Primary model: %s (unsupported)", cfg.UnderstandingModel)
+	t.Logf("   Fallback model: %s (used)", cfg.FallbackModel)
+}
+
+// BenchmarkGetFullDecisionV2WithAIModel 测试GetFullDecisionV2决策生成的性能
+func BenchmarkGetFullDecisionV2WithAIModel(b *testing.B) {
+	cfg := &Config{
+		Enabled:            true,
+		UnderstandingModel: "mock",
+		FallbackModel:      "mock",
+	}
+
+	store := &MockMemoryStore{}
+	compressor := NewContextCompressor(700)
+	kb := NewGlobalKnowledgeBase(store)
+	raf := NewRiskAwareFormatter()
+	sm := NewStageManager()
+	warmer := NewCacheWarmer(store, 0, 0)
+
+	gfd, _ := NewGetFullDecisionV2(store, compressor, kb, raf, sm, warmer, cfg)
+
+	ctx := context.Background()
+	query := Query{Type: "semantic_search", Limit: 5}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		gfd.GenerateDecision(ctx, query)
+	}
+}
