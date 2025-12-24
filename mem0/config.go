@@ -23,7 +23,11 @@ type Config struct {
 	UserID  string
 	OrgID   string
 
-	// AI模型
+	// AI模型选择 (新增 - 支持Gemini、GPT-4等)
+	UnderstandingModel string // 用于理解决策的AI模型："gemini", "gpt-4", "deepseek"
+	FallbackModel      string // 备用模型，如果主模型失败则使用此模型
+
+	// AI模型参数
 	Model       string
 	Temperature float64
 	MaxTokens   int
@@ -273,6 +277,20 @@ func LoadConfig(store StateStore) (*Config, error) {
 	log.Printf("   - 灰度: %d%% (自动回滚: %v)", cfg.RolloutPercentage, cfg.AutoRollbackEnabled)
 	log.Printf("   - A/B测试: %v", cfg.ABTestEnabled)
 	log.Printf("   - 详细日志: %v", cfg.VerboseLogging)
+
+	// 6. 读取AI模型选择配置 (新增 - 支持使用Gemini作为理解模型)
+	cfg.UnderstandingModel, _ = store.GetSystemConfig("mem0_understanding_model")
+	if cfg.UnderstandingModel == "" {
+		cfg.UnderstandingModel = "gemini" // 默认使用Gemini
+	}
+
+	cfg.FallbackModel, _ = store.GetSystemConfig("mem0_fallback_model")
+	if cfg.FallbackModel == "" {
+		cfg.FallbackModel = "gpt-4" // 默认备用模型
+	}
+
+	log.Printf("✅ Mem0配置加载完成")
+	log.Printf("   - 理解模型: %s (备用: %s)", cfg.UnderstandingModel, cfg.FallbackModel)
 
 	return cfg, nil
 }
