@@ -602,6 +602,11 @@ func (d *Database) initDefaultData() error {
 
 		"trading_decision_points_cost": "1",
 
+		// ==================== Mem0 AI 模型选择配置 ====================
+		// 指定Mem0的理解模型（用于生成完整决策的AI理解能力）
+		"mem0_understanding_model": "gemini",  // 默认使用Gemini，可选: "gpt-4", "deepseek"
+		"mem0_fallback_model": "gpt-4",        // 如果主模型失败，自动降级到此模型
+
 		// ==================== Gemini AI 模型配置 ====================
 		// 核心开关
 		"gemini_enabled": "false",
