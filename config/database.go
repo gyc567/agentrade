@@ -601,6 +601,52 @@ func (d *Database) initDefaultData() error {
 		"news_language": "zh-CN",
 
 		"trading_decision_points_cost": "1",
+
+		// ==================== Gemini AI 模型配置 ====================
+		// 核心开关
+		"gemini_enabled": "false",
+
+		// API 认证信息
+		"gemini_api_key": "",
+		"gemini_api_url": "https://gemini-proxy-iota-weld.vercel.app",
+		"gemini_api_version": "v1beta",
+
+		// 模型配置
+		"gemini_model": "gemini-3-flash-preview",
+		"gemini_temperature": "0.7",
+		"gemini_max_tokens": "2000",
+
+		// 高级采样参数
+		"gemini_top_p": "0.95",
+		"gemini_top_k": "40",
+
+		// 缓存和性能优化
+		"gemini_cache_enabled": "true",
+		"gemini_cache_ttl_minutes": "30",
+
+		// 容错和断路器
+		"gemini_circuit_breaker_enabled": "true",
+		"gemini_circuit_breaker_threshold": "3",
+		"gemini_circuit_breaker_timeout_seconds": "300",
+
+		// 监控和日志
+		"gemini_metrics_enabled": "true",
+		"gemini_verbose_logging": "false",
+		"gemini_log_requests": "false",
+
+		// 灰度发布策略
+		"gemini_rollout_percentage": "0",
+		"gemini_auto_fallback_enabled": "true",
+		"gemini_error_rate_threshold": "5.0",
+
+		// 超时配置
+		"gemini_timeout_seconds": "30",
+		"gemini_connect_timeout_seconds": "10",
+
+		// 重试策略
+		"gemini_retry_enabled": "true",
+		"gemini_retry_max_attempts": "3",
+		"gemini_retry_backoff_ms": "500",
 	}
 
 	for key, value := range systemConfigs {
