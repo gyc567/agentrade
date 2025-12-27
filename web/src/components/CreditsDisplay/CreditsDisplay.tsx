@@ -1,7 +1,7 @@
 import { useUserCredits } from '../../hooks/useUserCredits';
 import { CreditsIcon } from './CreditsIcon';
 import { CreditsValue } from './CreditsValue';
-import './credits.module.css';
+import styles from './credits.module.css';
 
 /**
  * CreditsDisplay 组件属性
@@ -32,14 +32,14 @@ export function CreditsDisplay({ className }: CreditsDisplayProps): React.ReactE
 
   // 加载状态：显示骨架屏
   if (loading) {
-    return <div className="credits-loading" data-testid="credits-loading" />;
+    return <div className={styles.creditsLoading} data-testid="credits-loading" />;
   }
 
   // 错误状态：显示警告图标和提示
   if (error) {
     return (
       <div
-        className="credits-error"
+        className={styles.creditsError}
         data-testid="credits-error"
         title="积分加载失败，请刷新页面"
         role="status"
@@ -50,19 +50,15 @@ export function CreditsDisplay({ className }: CreditsDisplayProps): React.ReactE
     );
   }
 
-  // 无数据：显示占位符（这种情况不应该发生，因为error或loading应该已处理）
+  // 无数据：不显示组件（适用于未登录状态）
   if (!credits) {
-    return (
-      <div className="credits-error" data-testid="credits-error" title="No credits data">
-        -
-      </div>
-    );
+    return null;
   }
 
   // 正常状态：显示积分
   return (
     <div
-      className={`credits-display ${className || ''}`}
+      className={`${styles.creditsDisplay} ${className || ''}`}
       data-testid="credits-display"
       role="status"
       aria-live="polite"

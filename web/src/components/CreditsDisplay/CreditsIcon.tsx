@@ -1,3 +1,5 @@
+import styles from './credits.module.css';
+
 /**
  * CreditsIcon - 积分图标组件
  *
@@ -12,7 +14,7 @@
 export function CreditsIcon(): React.ReactElement {
   return (
     <span
-      className="credits-icon"
+      className={styles.creditsIcon}
       data-testid="credits-icon"
       role="img"
       aria-label="credits"

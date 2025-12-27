@@ -14,23 +14,24 @@ const DEFAULT_API_URL = 'https://nofx-gyc567.replit.app';
  * - 独立前端部署使用VITE_API_URL或默认URL
  */
 export function getApiBaseUrl(): string {
-  // 开发环境使用相对路径
+  // 1. 如果设置了环境变量，优先使用环境变量
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL}/api`;
+  }
+
+  // 2. 开发环境使用相对路径
   if (import.meta.env.DEV) {
     return '/api';
   }
   
-  // 检查是否在Replit环境（后端服务前端）
-  // Replit域名包含 .replit.app 或 .replit.dev
+  // 3. 生产环境下，如果在浏览器中运行，默认使用相对路径
+  // 这适用于同域部署（如 Vercel 反向代理或 Replit 直接服务）
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname.includes('.replit.app') || hostname.includes('.replit.dev')) {
-      return '/api';
-    }
+    return '/api';
   }
   
-  // 外部部署（如Vercel）使用环境变量或默认URL
-  const apiUrl = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
-  return `${apiUrl}/api`;
+  // 4. 后台回退方案
+  return `${DEFAULT_API_URL}/api`;
 }
 
 /**
@@ -49,22 +50,23 @@ export function getApiUrl(endpoint: string): string {
  * @returns 后端域名（空字符串表示使用相对路径）
  */
 export function getBackendUrl(): string {
+  // 优先使用环境变量
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
   // 开发环境使用相对路径
   if (import.meta.env.DEV) {
     return '';
   }
   
-  // Replit环境使用相对路径
+  // 生产环境下，如果在浏览器中运行，默认使用相对路径
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname.includes('.replit.app') || hostname.includes('.replit.dev')) {
-      return '';
-    }
+    return '';
   }
 
-  // 外部部署使用环境变量或默认URL
-  const apiUrl = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
-  return apiUrl;
+  // 后台回退方案
+  return DEFAULT_API_URL;
 }
 
 /**

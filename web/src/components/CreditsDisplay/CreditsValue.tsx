@@ -1,3 +1,5 @@
+import styles from './credits.module.css';
+
 /**
  * CreditsValue 组件属性
  */
@@ -9,9 +11,6 @@ export interface CreditsValueProps {
 /**
  * 格式化大数字为简化形式
  * 例如：1000 -> 1k, 1500000 -> 1.5M
- *
- * @param {number} num - 要格式化的数字
- * @returns {string} 格式化后的数字
  */
 function formatShortNumber(num: number): string {
   if (num >= 1000000) {
@@ -25,21 +24,6 @@ function formatShortNumber(num: number): string {
 
 /**
  * CreditsValue - 积分数值组件
- *
- * 纯展示组件，用于显示积分数值
- * 支持两种格式：
- * - 'number': 完整数字 (1000)
- * - 'short': 简化形式 (1k)
- *
- * @param {CreditsValueProps} props - 组件属性
- * @returns {React.ReactElement} 积分数值
- *
- * @example
- * <CreditsValue value={750} />
- * // 显示：750
- *
- * <CreditsValue value={1000} format="short" />
- * // 显示：1k
  */
 export function CreditsValue({
   value,
@@ -49,7 +33,7 @@ export function CreditsValue({
 
   return (
     <span
-      className="credits-value"
+      className={styles.creditsValue}
       data-testid="credits-value"
       data-value={value}
     >

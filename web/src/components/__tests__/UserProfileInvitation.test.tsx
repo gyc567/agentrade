@@ -2,7 +2,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import UserProfilePage from '../../pages/UserProfilePage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useUserProfile, useUserCredits } from '../../hooks/useUserProfile';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import { useUserCredits } from '../../hooks/useUserCredits';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies

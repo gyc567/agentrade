@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useUserProfile, useUserCredits } from '../hooks/useUserProfile';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useUserCredits } from '../hooks/useUserCredits';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../i18n/translations';
