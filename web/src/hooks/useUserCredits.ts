@@ -87,14 +87,27 @@ export function useUserCredits(): UseUserCreditsReturn {
         throw new Error('API响应数据格式错误: 期望对象');
       }
 
-      const credits = data as UserCredits;
-      if (typeof credits.available !== 'number' ||
-          typeof credits.total !== 'number' ||
-          typeof credits.used !== 'number') {
-        throw new Error('API响应数据格式错误: 缺少必要字段或类型不正确');
+      // 后端返回格式: {"code":200,"data":{"available_credits":0,"total_credits":0,"used_credits":0}}
+      // 前端期望格式: {"available":0,"total":0,"used":0,"lastUpdated":"..."}
+      let creditsData: UserCredits;
+      
+      if (data.data && typeof data.data === 'object') {
+        // 解析嵌套的 data 对象，字段名映射
+        const apiData = data.data;
+        creditsData = {
+          available: typeof apiData.available_credits === 'number' ? apiData.available_credits : 0,
+          total: typeof apiData.total_credits === 'number' ? apiData.total_credits : 0,
+          used: typeof apiData.used_credits === 'number' ? apiData.used_credits : 0,
+          lastUpdated: new Date().toISOString(),
+        };
+      } else if (typeof data.available === 'number') {
+        // 兼容直接返回的格式
+        creditsData = data as UserCredits;
+      } else {
+        throw new Error('API响应数据格式错误: 缺少必要字段');
       }
 
-      setCredits(credits);
+      setCredits(creditsData);
       setLoading(false);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));

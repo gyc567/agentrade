@@ -236,6 +236,19 @@ func NewAutoTrader(config AutoTraderConfig) (*AutoTrader, error) {
         // 初始化币种特定参数管理器
         symbolConfigManager := decision.NewSymbolConfigManager()
 
+        // 从数据库加载持久化的周期计数
+        persistedCallCount := 0
+        if config.Database != nil {
+                countKey := fmt.Sprintf("trader_%s_cycle_count", config.ID)
+                countStr, err := config.Database.GetSystemConfig(countKey)
+                if err == nil && countStr != "" {
+                        if count, parseErr := strconv.Atoi(countStr); parseErr == nil {
+                                persistedCallCount = count
+                                log.Printf("📊 [%s] 从数据库加载周期计数: %d", config.Name, persistedCallCount)
+                        }
+                }
+        }
+
         return &AutoTrader{
                 id:                    config.ID,
                 userID:                config.UserID,
@@ -256,7 +269,7 @@ func NewAutoTrader(config AutoTraderConfig) (*AutoTrader, error) {
                 tradingCoins:          config.TradingCoins,
                 lastResetTime:         time.Now(),
                 startTime:             time.Now(),
-                callCount:             0,
+                callCount:             persistedCallCount,
                 isRunning:             false,
                 positionFirstSeenTime: make(map[string]int64),
         }, nil
@@ -329,6 +342,14 @@ func (at *AutoTrader) Stop() {
 // runCycle 运行一个交易周期（使用AI全权决策）
 func (at *AutoTrader) runCycle() error {
         at.callCount++
+
+        // 持久化周期计数到数据库
+        if at.db != nil {
+                countKey := fmt.Sprintf("trader_%s_cycle_count", at.id)
+                if err := at.db.SetSystemConfig(countKey, strconv.Itoa(at.callCount)); err != nil {
+                        log.Printf("⚠️ 保存周期计数失败: %v", err)
+                }
+        }
 
         log.Println(strings.Repeat("=", 70))
         log.Printf("⏰ %s - AI决策周期 #%d", time.Now().Format("2006-01-02 15:04:05"), at.callCount)
