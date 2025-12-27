@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true, // Make test utilities global for easier use
+    setupFiles: ['./vitest.setup.ts'],
     // Revert include to default (all tests)
   },
 })

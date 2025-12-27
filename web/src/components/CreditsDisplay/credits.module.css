@@ -1,0 +1,106 @@
+/* Credits Display Component Styles */
+
+.creditsDisplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(240, 185, 11, 0.1);
+  color: #F0B90B;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.creditsDisplay:hover {
+  background: rgba(240, 185, 11, 0.2);
+  transform: translateY(-1px);
+}
+
+.creditsIcon {
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.creditsValue {
+  min-width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Loading State */
+.creditsLoading {
+  width: 60px;
+  height: 24px;
+  background: linear-gradient(
+    90deg,
+    rgba(240, 185, 11, 0.1) 25%,
+    rgba(240, 185, 11, 0.2) 50%,
+    rgba(240, 185, 11, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+/* Error State */
+.creditsError {
+  color: #999;
+  font-size: 14px;
+  padding: 4px 8px;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .creditsDisplay {
+    padding: 4px 6px;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .creditsIcon {
+    font-size: 14px;
+  }
+
+  .creditsValue {
+    min-width: 32px;
+  }
+
+  .creditsLoading {
+    width: 50px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .creditsDisplay {
+    padding: 2px 4px;
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .creditsIcon {
+    font-size: 12px;
+  }
+
+  .creditsValue {
+    min-width: 28px;
+  }
+}

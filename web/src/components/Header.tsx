@@ -1,5 +1,6 @@
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../i18n/translations';
+import { CreditsDisplay } from './CreditsDisplay';
 
 interface HeaderProps {
   simple?: boolean; // For login/register pages
@@ -28,29 +29,35 @@ export function Header({ simple = false }: HeaderProps) {
               )}
             </div>
           </div>
-          
-          {/* Right - Language Toggle (always show) */}
-          <div className="flex gap-1 rounded p-1" style={{ background: '#1E2329' }}>
-            <button
-              onClick={() => setLanguage('zh')}
-              className="px-3 py-1.5 rounded text-xs font-semibold transition-all"
-              style={language === 'zh'
-                ? { background: '#F0B90B', color: '#000' }
-                : { background: 'transparent', color: '#848E9C' }
-              }
-            >
-              中文
-            </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className="px-3 py-1.5 rounded text-xs font-semibold transition-all"
-              style={language === 'en'
-                ? { background: '#F0B90B', color: '#000' }
-                : { background: 'transparent', color: '#848E9C' }
-              }
-            >
-              EN
-            </button>
+
+          {/* Right - Credits Display and Language Toggle */}
+          <div className="flex items-center gap-4">
+            {/* 🆕 Credits Display - 仅在非简化模式下显示 */}
+            {!simple && <CreditsDisplay />}
+
+            {/* Language Toggle (always show) */}
+            <div className="flex gap-1 rounded p-1" style={{ background: '#1E2329' }}>
+              <button
+                onClick={() => setLanguage('zh')}
+                className="px-3 py-1.5 rounded text-xs font-semibold transition-all"
+                style={language === 'zh'
+                  ? { background: '#F0B90B', color: '#000' }
+                  : { background: 'transparent', color: '#848E9C' }
+                }
+              >
+                中文
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className="px-3 py-1.5 rounded text-xs font-semibold transition-all"
+                style={language === 'en'
+                  ? { background: '#F0B90B', color: '#000' }
+                  : { background: 'transparent', color: '#848E9C' }
+                }
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
       </div>
