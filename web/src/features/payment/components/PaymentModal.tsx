@@ -4,10 +4,8 @@
  * Displays package selection and Crossmint checkout
  */
 
-import React, { useState } from "react"
 import { usePaymentContext } from "../contexts/PaymentProvider"
 import { usePaymentPackages } from "../hooks/usePaymentPackages"
-import { useCrossmintCheckout } from "../hooks/useCrossmintCheckout"
 import { formatPrice, formatCredits } from "../utils/formatPrice"
 import type { PaymentPackage } from "../types/payment"
 
@@ -24,7 +22,6 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const context = usePaymentContext()
   const { packages } = usePaymentPackages()
-  const { handleCheckoutEvent } = useCrossmintCheckout()
 
   if (!isOpen) return null
 
@@ -45,7 +42,7 @@ export function PaymentModal({
     onClose()
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY
+  const apiKey = import.meta.env.VITE_CROSSMINT_CLIENT_API_KEY
 
   if (!apiKey) {
     return (

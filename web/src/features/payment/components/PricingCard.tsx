@@ -18,7 +18,6 @@ interface PricingCardProps {
 
 export const PricingCard: React.FC<PricingCardProps> = ({
   package: pkg,
-  isRecommended = false,
   onPurchase,
   isDisabled = false,
 }) => {

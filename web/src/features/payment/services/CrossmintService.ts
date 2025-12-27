@@ -4,14 +4,13 @@
  * Handles all interactions with Crossmint API
  */
 
-import type { PaymentPackage, CrossmintCheckoutConfig, CrossmintLineItem } from "../types/payment"
+import type { PaymentPackage, CrossmintLineItem } from "../types/payment"
 
 export class CrossmintService {
   private apiKey: string
-  private isInitialized: boolean = false
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || ""
+    this.apiKey = apiKey || import.meta.env.VITE_CROSSMINT_CLIENT_API_KEY || ""
 
     if (!this.apiKey) {
       console.warn(
@@ -31,14 +30,13 @@ export class CrossmintService {
    * Initialize Crossmint checkout
    * This is typically called by React components
    */
-  async initializeCheckout(config: CrossmintCheckoutConfig): Promise<void> {
+  async initializeCheckout(): Promise<void> {
     if (!this.isConfigured()) {
       throw new Error("Crossmint API Key is not configured")
     }
 
     // The actual SDK initialization is handled by CrossmintProvider
     // This method is for reference and future enhancements
-    this.isInitialized = true
   }
 
   /**
@@ -119,7 +117,7 @@ export class CrossmintService {
    * Verifies a Crossmint payment signature
    * For enhanced security (optional but recommended)
    */
-  verifyPaymentSignature(signature: unknown, payload: unknown): boolean {
+  verifyPaymentSignature(signature: unknown): boolean {
     // In a real implementation, this would verify the signature
     // using the Crossmint webhook secret
     // For now, we accept it and let the backend verify
@@ -146,7 +144,7 @@ export class CrossmintService {
    * Resets the service state
    */
   reset(): void {
-    this.isInitialized = false
+    // Service state reset (currently no state to reset)
   }
 }
 

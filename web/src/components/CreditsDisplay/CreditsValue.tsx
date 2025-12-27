@@ -6,6 +6,7 @@ import styles from './credits.module.css';
 export interface CreditsValueProps {
   value: number;
   format?: 'number' | 'short';
+  onOpen?: () => void;
 }
 
 /**
@@ -24,20 +25,35 @@ function formatShortNumber(num: number): string {
 
 /**
  * CreditsValue - 积分数值组件
+ * 点击打开支付modal，允许用户购买积分
  */
 export function CreditsValue({
   value,
   format = 'number',
+  onOpen,
 }: CreditsValueProps): React.ReactElement {
   const displayValue = format === 'short' ? formatShortNumber(value) : value;
+
+  const handleClick = () => {
+    onOpen?.();
+  };
 
   return (
     <span
       className={styles.creditsValue}
       data-testid="credits-value"
       data-value={value}
+      onClick={handleClick}
+      style={{ cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          handleClick();
+        }
+      }}
     >
-      {displayValue}
+      {displayValue}(用户积分)
     </span>
   );
 }

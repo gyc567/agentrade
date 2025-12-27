@@ -9,6 +9,7 @@ import styles from './credits.module.css';
  */
 export interface CreditsDisplayProps {
   className?: string;
+  onOpenPayment?: () => void;
 }
 
 /**
@@ -28,7 +29,7 @@ export interface CreditsDisplayProps {
  * // 或带自定义className
  * <CreditsDisplay className="custom-class" />
  */
-export function CreditsDisplay({ className }: CreditsDisplayProps): React.ReactElement | null {
+export function CreditsDisplay({ className, onOpenPayment }: CreditsDisplayProps): React.ReactElement | null {
   const { user, token, isLoading: authLoading } = useAuth();
   const { credits, loading, error } = useUserCredits();
   
@@ -79,7 +80,7 @@ export function CreditsDisplay({ className }: CreditsDisplayProps): React.ReactE
         aria-label="Available credits: 0"
       >
         <CreditsIcon />
-        <CreditsValue value={0} />
+        <CreditsValue value={0} onOpen={onOpenPayment} />
       </div>
     );
   }
@@ -94,7 +95,7 @@ export function CreditsDisplay({ className }: CreditsDisplayProps): React.ReactE
       aria-label={`Available credits: ${credits.available}`}
     >
       <CreditsIcon />
-      <CreditsValue value={credits.available} />
+      <CreditsValue value={credits.available} onOpen={onOpenPayment} />
     </div>
   );
 }

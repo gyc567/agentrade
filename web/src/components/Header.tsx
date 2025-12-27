@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { t } from '../i18n/translations';
 import { CreditsDisplay } from './CreditsDisplay';
+import { PaymentModal } from '../features/payment/components/PaymentModal';
 
 interface HeaderProps {
   simple?: boolean; // For login/register pages
@@ -8,6 +11,8 @@ interface HeaderProps {
 
 export function Header({ simple = false }: HeaderProps) {
   const { language, setLanguage } = useLanguage();
+  const { user } = useAuth();
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   return (
     <header className="glass sticky top-0 z-50 backdrop-blur-xl">
@@ -30,10 +35,17 @@ export function Header({ simple = false }: HeaderProps) {
             </div>
           </div>
 
-          {/* Right - Credits Display and Language Toggle */}
+          {/* Right - User Info, Credits Display and Language Toggle */}
           <div className="flex items-center gap-4">
-            {/* 🆕 Credits Display - 仅在非简化模式下显示 */}
-            {!simple && <CreditsDisplay />}
+            {/* User Name - 仅在非简化模式下显示 */}
+            {!simple && user?.email && (
+              <div className="text-sm" style={{ color: '#848E9C' }}>
+                {user.email}
+              </div>
+            )}
+
+            {/* Credits Display - 仅在非简化模式下显示 */}
+            {!simple && <CreditsDisplay onOpenPayment={() => setIsPaymentModalOpen(true)} />}
 
             {/* Language Toggle (always show) */}
             <div className="flex gap-1 rounded p-1" style={{ background: '#1E2329' }}>
@@ -61,6 +73,12 @@ export function Header({ simple = false }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+      />
     </header>
   );
 }

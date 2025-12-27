@@ -5,13 +5,13 @@
  * Integrates with PaymentModal for checkout
  */
 
-import React, { useState, useMemo } from 'react'
-import PricingCard from '@/features/payment/components/PricingCard'
-import usePricingData from '@/features/payment/hooks/usePricingData'
-import PaymentModal from '@/features/payment/components/PaymentModal'
-import { getPricingContent } from '@/features/payment/constants/pricing-content'
-import '@/features/payment/styles/pricing.css'
-import type { PaymentPackage } from '@/features/payment/types/payment'
+import { useState, useMemo } from 'react'
+import { PricingCard } from '../features/payment/components/PricingCard'
+import usePricingData from '../features/payment/hooks/usePricingData'
+import { PaymentModal } from '../features/payment/components/PaymentModal'
+import { getPricingContent } from '../features/payment/constants/pricing-content'
+import '../features/payment/styles/pricing.css'
+import type { PaymentPackage } from '../features/payment/types/payment'
 
 interface PricingPageProps {
   lang?: 'en' | 'zh'
@@ -19,24 +19,21 @@ interface PricingPageProps {
 
 const PricingPage: React.FC<PricingPageProps> = ({ lang = 'en' }) => {
   const { packages, loading, error, refetch } = usePricingData()
-  const [selectedPackage, setSelectedPackage] = useState<PaymentPackage | null>(
-    null
-  )
   const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   const content = useMemo(() => getPricingContent(lang), [lang])
 
   const handlePurchase = (packageId: string) => {
-    const pkg = packages.find((p) => p.id === packageId)
+    // Find package with matching ID
+    const pkg = packages.find((p: PaymentPackage) => p.id === packageId)
     if (pkg) {
-      setSelectedPackage(pkg)
+      // Package found, show payment modal
       setShowPaymentModal(true)
     }
   }
 
   const handleCloseModal = () => {
     setShowPaymentModal(false)
-    setSelectedPackage(null)
   }
 
   return (
@@ -81,7 +78,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ lang = 'en' }) => {
           </div>
         ) : (
           <div className="pricing-grid">
-            {packages.map((pkg) => (
+            {packages.map((pkg: PaymentPackage) => (
               <PricingCard
                 key={pkg.id}
                 package={pkg}
@@ -102,7 +99,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ lang = 'en' }) => {
               : 'All packages include'}
           </h2>
           <div className="features-grid">
-            {content.features.map((feature, idx) => (
+            {content.features.map((feature: string, idx: number) => (
               <div key={idx} className="feature-item">
                 <span className="feature-icon">✓</span>
                 <span className="feature-text">{feature}</span>
@@ -119,7 +116,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ lang = 'en' }) => {
             {lang === 'zh' ? '常见问题' : 'Frequently Asked Questions'}
           </h2>
           <div className="faq-list">
-            {content.faq.map((item, idx) => (
+            {content.faq.map((item: { question: string; answer: string }, idx: number) => (
               <details key={idx} className="faq-item">
                 <summary className="faq-question">
                   {item.question}
@@ -132,12 +129,10 @@ const PricingPage: React.FC<PricingPageProps> = ({ lang = 'en' }) => {
       </section>
 
       {/* Payment Modal */}
-      {showPaymentModal && selectedPackage && (
-        <PaymentModal
-          package={selectedPackage}
-          onClose={handleCloseModal}
-        />
-      )}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={handleCloseModal}
+      />
     </div>
   )
 }
