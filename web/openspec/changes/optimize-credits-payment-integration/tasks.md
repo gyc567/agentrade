@@ -1,53 +1,53 @@
 ## Phase 1: Critical Accessibility & Security Fixes
 
 ### 1.1 PaymentModal Accessibility Implementation
-- [ ] 1.1.1 Add role="dialog" and ARIA attributes to PaymentModal
-- [ ] 1.1.2 Implement focus trap using useEffect hook
-- [ ] 1.1.3 Add Escape key listener to close modal with proper cleanup
-- [ ] 1.1.4 Implement focus restoration when modal closes
-- [ ] 1.1.5 Add aria-label and aria-describedby to dialog container
-- [ ] 1.1.6 Add aria-label to all action buttons (close, select, pay, retry)
-- [ ] 1.1.7 Add aria-busy to buttons during payment processing
-- [ ] 1.1.8 Add aria-disabled to disabled buttons
+- [x] 1.1.1 Add role="dialog" and ARIA attributes to PaymentModal
+- [x] 1.1.2 Implement focus trap using useEffect hook
+- [x] 1.1.3 Add Escape key listener to close modal with proper cleanup
+- [x] 1.1.4 Implement focus restoration when modal closes
+- [x] 1.1.5 Add aria-label and aria-describedby to dialog container
+- [x] 1.1.6 Add aria-label to all action buttons (close, select, pay, retry)
+- [x] 1.1.7 Add aria-busy to buttons during payment processing
+- [x] 1.1.8 Add aria-disabled to disabled buttons
 
 ### 1.2 PaymentModal Styling Refactor
-- [ ] 1.2.1 Create payment-modal.module.css file
-- [ ] 1.2.2 Extract overlay styles to CSS module
-- [ ] 1.2.3 Extract content container styles to CSS module
-- [ ] 1.2.4 Extract button styles to CSS module
-- [ ] 1.2.5 Extract form/input styles to CSS module
-- [ ] 1.2.6 Extract state-specific styles (idle, loading, success, error)
-- [ ] 1.2.7 Move @keyframes animations to CSS file
-- [ ] 1.2.8 Remove all inline style={{}} objects from JSX
-- [ ] 1.2.9 Update imports to use CSS module classes
+- [x] 1.2.1 Create payment-modal.module.css file
+- [x] 1.2.2 Extract overlay styles to CSS module
+- [x] 1.2.3 Extract content container styles to CSS module
+- [x] 1.2.4 Extract button styles to CSS module
+- [x] 1.2.5 Extract form/input styles to CSS module
+- [x] 1.2.6 Extract state-specific styles (idle, loading, success, error)
+- [x] 1.2.7 Move @keyframes animations to CSS file
+- [x] 1.2.8 Remove all inline style={{}} objects from JSX
+- [x] 1.2.9 Update imports to use CSS module classes
 
 ### 1.3 Security: Remove Sensitive Logging
-- [ ] 1.3.1 Wrap console.log in CreditsDisplay with process.env.NODE_ENV check
-- [ ] 1.3.2 Move sensitive logs to console.debug (only in dev mode)
-- [ ] 1.3.3 Remove userId logging
-- [ ] 1.3.4 Remove token/auth status logging from production
-- [ ] 1.3.5 Use structured logging approach for error cases only
+- [x] 1.3.1 Wrap console.log in CreditsDisplay with process.env.NODE_ENV check
+- [x] 1.3.2 Move sensitive logs to console.debug (only in dev mode)
+- [x] 1.3.3 Remove userId logging
+- [x] 1.3.4 Remove token/auth status logging from production
+- [x] 1.3.5 Use structured logging approach for error cases only
 
 ### 1.4 CreditsValue Keyboard & i18n
-- [ ] 1.4.1 Add event.preventDefault() in keyboard handler
-- [ ] 1.4.2 Add aria-label prop to CreditsValue
-- [ ] 1.4.3 Replace hardcoded "(用户积分)" with i18n translation
-- [ ] 1.4.4 Use useLanguage hook for dynamic text
-- [ ] 1.4.5 Add disabled and loading prop support
+- [x] 1.4.1 Add event.preventDefault() in keyboard handler
+- [x] 1.4.2 Add aria-label prop to CreditsValue
+- [x] 1.4.3 Replace hardcoded "(用户积分)" with i18n translation
+- [x] 1.4.4 Use useLanguage hook for dynamic text
+- [x] 1.4.5 Add disabled and loading prop support
 
 ### 1.5 Button State Management
-- [ ] 1.5.1 Add disabled state to payment submit button
-- [ ] 1.5.2 Disable button during loading state (context.paymentStatus === 'loading')
-- [ ] 1.5.3 Disable button when no package selected
-- [ ] 1.5.4 Disable button during success state until closed
-- [ ] 1.5.5 Update button text to show loading state ("Processing...")
-- [ ] 1.5.6 Add visual feedback for disabled state
+- [x] 1.5.1 Add disabled state to payment submit button
+- [x] 1.5.2 Disable button during loading state (context.paymentStatus === 'loading')
+- [x] 1.5.3 Disable button when no package selected
+- [x] 1.5.4 Disable button during success state until closed
+- [x] 1.5.5 Update button text to show loading state ("Processing...")
+- [x] 1.5.6 Add visual feedback for disabled state
 
 ### 1.6 Error Recovery UI
-- [ ] 1.6.1 Ensure error messages display in error state
-- [ ] 1.6.2 Add retry button in error state (context.resetPayment)
-- [ ] 1.6.3 Provide clear action: show error details with context
-- [ ] 1.6.4 Add support contact information in error message
+- [x] 1.6.1 Ensure error messages display in error state
+- [x] 1.6.2 Add retry button in error state (context.resetPayment)
+- [x] 1.6.3 Provide clear action: show error details with context
+- [x] 1.6.4 Add support contact information in error message
 
 ---
 
