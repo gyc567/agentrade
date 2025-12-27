@@ -1,0 +1,287 @@
+---
+# OpenSpec: Crossmint Web3 USDT Payment Integration
+# Version: 1.0.0
+# Status: Proposal Phase
+# Date: 2025-12-25
+# Author: Claude Code (AI Code Assistant)
+
+apiVersion: "1.0"
+kind: Feature
+metadata:
+  name: "Crossmint Web3 USDT Payment Integration"
+  shortName: "crossmint-payment"
+  version: "1.0.0"
+  status: proposal
+  priority: high
+  category: "payments"
+  createdAt: "2025-12-25"
+  updatedAt: "2025-12-25"
+  owner: "Payment Team"
+
+spec:
+
+  # ====== 功能定义 ======
+  summary: |
+    将 Crossmint 支付网关集成到现有积分套餐系统，允许用户通过
+    USDT (Polygon/Base/Arbitrum) 直接购买积分套餐，无需中间商。
+
+  description: |
+    用户通过连接加密钱包（MetaMask、WalletConnect等），使用 USDT
+    购买预定义的积分套餐。支付通过 Crossmint Hosted Checkout 处理，
+    后端通过 Webhook 确认链上支付并为用户添加积分。
+
+    本功能为完全独立的模块，不修改现有认证、交易员、积分查询系统。
+
+  # ====== 业务价值 ======
+  businessValue: |
+    - 开通 Web3 支付通道，吸引加密用户群体
+    - 低成本支付方案（Crossmint 手续费约 1%）
+    - 支持多条区块链，用户灵活选择低费链
+    - 完全自动化支付流程，无需人工审核
+
+  # ====== 范围定义 ======
+  scope:
+    inScope:
+      - 支付功能专属模块（payment feature）
+      - 3 个固定的积分套餐档位（Starter/Pro/VIP）
+      - 支付成功/失败/取消流程处理
+      - 交易历史记录显示（可选）
+      - 100% 单元测试覆盖
+      - Webhook 幂等性处理
+
+    outOfScope:
+      - 用户认证系统修改
+      - 交易员管理功能修改
+      - 积分消耗逻辑修改
+      - 法币支付（Stripe/PayPal）
+      - 订阅制（仅支持单次购买）
+      - 发票生成
+
+  # ====== 约束条件 ======
+  constraints:
+    technical:
+      - 仅支持 Crypto 支付（禁用信用卡）
+      - 依赖 Crossmint Hosted Checkout API
+      - 前端使用 Client-side API Key（公开）
+      - 后端需要 Server-side API Key 验证 Webhook
+      - 需要 .env.local 配置：NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY
+
+    business:
+      - 仅在开发/测试环境前期支持 Polygon Mumbai
+      - 生产环境支持 Polygon/Base/Arbitrum 三条链
+      - 套餐价格单位为 USDT
+      - 赠送积分比例由配置决定
+
+    legal:
+      - 遵守各国加密货币规制
+      - 保存支付记录用于审计
+      - Webhook 签名验证强制
+
+  # ====== 关键需求 ======
+  requirements:
+    functional:
+      - REQ-001: 用户可选择积分套餐并查看价格
+      - REQ-002: 用户可启动 Crossmint Hosted Checkout
+      - REQ-003: 支付成功后自动加积分到用户账户
+      - REQ-004: 支付失败时显示友好的错误提示
+      - REQ-005: 防止重复支付（幂等性保证）
+      - REQ-006: 支持多链选择（Polygon/Base/Arbitrum）
+      - REQ-007: 记录交易历史用于后续查询
+
+    nonFunctional:
+      - NFR-001: 支付模态框加载时间 < 2s
+      - NFR-002: 支付确认 API 响应时间 < 1s
+      - NFR-003: 100% TypeScript 类型覆盖
+      - NFR-004: 100% 测试覆盖率（单元+集成+E2E）
+      - NFR-005: 支持 i18n 国际化（至少中英文）
+      - NFR-006: 无障碍访问（WCAG 2.1 AA）
+
+  # ====== 依赖关系 ======
+  dependencies:
+    external:
+      - "@crossmint/client-sdk-react-ui": "^latest"
+      - Crossmint Backend API (webhook endpoint)
+
+    internal:
+      - AuthContext (读取 user.id)
+      - useUserCredits Hook (刷新积分)
+      - lib/api.ts (HTTP 请求)
+      - types.ts (全局类型定义)
+
+    backend:
+      - POST /api/payments/confirm endpoint
+      - POST /api/webhooks/crossmint endpoint
+      - payment_orders 数据表
+
+  # ====== 成功标准 ======
+  acceptanceCriteria:
+    - "✅ 用户可完整走通支付流程并获得积分"
+    - "✅ 支付失败时系统正确处理，积分不被重复加"
+    - "✅ 所有新增代码 100% 单元测试覆盖"
+    - "✅ E2E 测试覆盖完整支付场景"
+    - "✅ 现有功能零破坏（回归测试通过）"
+    - "✅ 支持三条区块链（Polygon/Base/Arbitrum）"
+    - "✅ TypeScript 无 any 类型、无编译错误"
+    - "✅ API 文档完整、示例代码可运行"
+
+  # ====== 实施计划 ======
+  implementation:
+    phases:
+      - phase: 1
+        name: "Foundation (核心模块架构)"
+        duration: "3-4 hours"
+        deliverables:
+          - "types/payment.ts - 数据模型定义"
+          - "services/paymentValidator.ts - 数据验证"
+          - "services/PaymentOrchestrator.ts - 流程编排"
+        testing: "单元测试 + 集成测试"
+
+      - phase: 2
+        name: "Frontend Integration (前端集成)"
+        duration: "4-5 hours"
+        deliverables:
+          - "contexts/PaymentContext.tsx - 状态管理"
+          - "hooks/usePaymentPackages.ts - 套餐数据"
+          - "hooks/useCrossmintCheckout.ts - SDK 集成"
+          - "components/PaymentModal.tsx - UI 容器"
+        testing: "单元测试 + 组件测试"
+
+      - phase: 3
+        name: "Backend Integration (后端集成)"
+        duration: "Backend Team"
+        deliverables:
+          - "POST /api/payments/confirm - 支付确认"
+          - "POST /api/webhooks/crossmint - Webhook 处理"
+          - "DB migration - payment_orders 表"
+        testing: "API 集成测试"
+
+      - phase: 4
+        name: "E2E Testing & Polish (端到端测试)"
+        duration: "2-3 hours"
+        deliverables:
+          - "Playwright E2E 测试 5 个场景"
+          - "错误提示优化"
+          - "UX 细节调整"
+        testing: "E2E 测试"
+
+      - phase: 5
+        name: "Documentation & Deployment (文档和上线)"
+        duration: "1-2 hours"
+        deliverables:
+          - "README.md - 支付功能使用说明"
+          - "API 文档"
+          - "测试报告"
+
+  # ====== 风险管理 ======
+  risks:
+    - name: "Webhook 重复执行导致积分重复加"
+      severity: high
+      mitigation: "数据库唯一性约束 + 幂等 Key + 内存缓存"
+
+    - name: "支付成功但后端确认失败"
+      severity: medium
+      mitigation: "重试机制 + 人工审查工具"
+
+    - name: "环境变量配置错误（缺少 API Key）"
+      severity: medium
+      mitigation: "启动检查 + 清晰的错误提示"
+
+    - name: "localStorage 中积分缓存与服务端不一致"
+      severity: low
+      mitigation: "支付后强制刷新积分 + TTL 过期"
+
+  # ====== 性能目标 ======
+  performance:
+    loadTime: "< 2s"
+    apiResponseTime: "< 1s"
+    checkoutInitTime: "< 1.5s"
+    errorRecoveryTime: "< 500ms"
+
+  # ====== 安全性 ======
+  security:
+    authentication: "JWT Token (从 AuthContext 获取)"
+    authorization: "用户只能查看自己的支付历史"
+    dataValidation: "严格的套餐ID、价格验证"
+    webhookSecurity: "HMAC 签名验证"
+    encryption: "HTTPS 强制、敏感数据不落地"
+    preventionMeasures:
+      - "CSRF 防护（SameSite cookies）"
+      - "价格篡改防护（后端验证）"
+      - "重放攻击防护（时间戳校验）"
+
+  # ====== 设计原则 ======
+  designPrinciples:
+    - "KISS (Keep It Simple, Stupid) - 消除边界情况"
+    - "SOLID - 单一职责、开闭原则"
+    - "DRY - 不重复代码"
+    - "High Cohesion, Low Coupling - 高内聚、低耦合"
+    - "Fail Fast - 及早发现错误"
+    - "Zero Trust - 不信任任何输入"
+
+  # ====== 测试策略 ======
+  testing:
+    unitTests:
+      target: "20+ 用例"
+      coverage: "100%"
+      files:
+        - "paymentValidator.test.ts"
+        - "PaymentPackage.test.ts"
+        - "useCrossmintCheckout.test.ts"
+
+    integrationTests:
+      target: "12+ 用例"
+      coverage: "100%"
+      files:
+        - "PaymentOrchestrator.test.ts"
+        - "CrossmintService.test.ts"
+        - "PaymentContext.test.ts"
+
+    e2eTests:
+      target: "5 个场景"
+      scenarios:
+        - "完整支付流程"
+        - "支付失败处理"
+        - "重复支付防护"
+        - "套餐验证"
+        - "无钱包环境"
+
+    regressionTests:
+      target: "现有功能零破坏"
+      scope: "Auth/Traders/Credits 模块"
+
+  # ====== 文档清单 ======
+  documentation:
+    - "architecture.md - 架构设计"
+    - "api-contracts.md - API 契约"
+    - "data-model.md - 数据模型"
+    - "testing-strategy.md - 测试策略"
+    - "implementation-guide.md - 实现指南"
+    - "module-structure.md - 模块结构"
+    - "risk-analysis.md - 风险分析"
+    - "README.md - 功能说明"
+
+  # ====== 后续步骤 ======
+  nextSteps:
+    - "✅ 获得产品经理批准"
+    - "✅ 完成详细设计评审"
+    - "⏳ 后端团队同步 API 接口定义"
+    - "⏳ 创建任务卡片到 Sprint"
+    - "⏳ 开始 Phase 1 实施"
+    - "⏳ 定期进度同步"
+
+# ====== 审核历史 ======
+reviewHistory:
+  - date: "2025-12-25"
+    author: "Claude Code"
+    action: "Initial Proposal Created"
+    status: "awaiting review"
+
+# ====== 相关文件 ======
+relatedFiles:
+  - "architecture.md"
+  - "api-contracts.md"
+  - "data-model.md"
+  - "testing-strategy.md"
+  - "implementation-guide.md"
+  - "module-structure.md"
+  - "risk-analysis.md"
