@@ -47,6 +47,25 @@ export function Header({ simple = false }: HeaderProps) {
             {/* Credits Display - 仅在非简化模式下显示 */}
             {!simple && <CreditsDisplay onOpenPayment={() => setIsPaymentModalOpen(true)} />}
 
+            {/* Credits Packages Button - 新增 */}
+            <button
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="px-4 py-2 rounded text-sm font-semibold transition-all"
+              style={{
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: '4px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#0056b3'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#007bff'}
+              aria-label={language === 'zh' ? '打开用户积分套餐购买面板' : 'Open credit packages'}
+              title={language === 'zh' ? '点击购买更多积分' : 'Click to purchase credits'}
+            >
+              {language === 'zh' ? '积分套餐' : 'Packages'}
+            </button>
+
             {/* Language Toggle (always show) */}
             <div className="flex gap-1 rounded p-1" style={{ background: '#1E2329' }}>
               <button
