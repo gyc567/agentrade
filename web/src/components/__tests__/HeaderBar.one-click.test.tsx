@@ -34,8 +34,8 @@ vi.mock('../../features/payment/components/PaymentModal', () => ({
   PaymentModal: () => null,
 }));
 
-vi.mock('../TraderConfigModal', () => ({
-  TraderConfigModal: (props: any) => {
+vi.mock('../TraderConfigModal', () => {
+  const MockModal = (props: any) => {
     modalPropsSpy(props);
     if (!props.isOpen) return null;
     return (
@@ -48,8 +48,14 @@ vi.mock('../TraderConfigModal', () => ({
         </button>
       </div>
     );
-  },
-}));
+  };
+
+  return {
+    __esModule: true,
+    default: MockModal,
+    TraderConfigModal: MockModal,
+  };
+});
 
 vi.mock('../../lib/api', () => ({
   api: {
@@ -121,6 +127,12 @@ describe('HeaderBar one-click trader shortcut', () => {
     expect(screen.queryByRole('button', { name: '一键生成交易员' })).not.toBeInTheDocument();
   });
 
+  it('does not load configs when logged out', () => {
+    render(<HeaderBar isLoggedIn={false} language="en" currentPage="competition" />);
+    expect(api.getModelConfigs).not.toHaveBeenCalled();
+    expect(api.getExchangeConfigs).not.toHaveBeenCalled();
+  });
+
   it('opens the modal and submits via create trader API', async () => {
     render(<HeaderBar isLoggedIn language="en" currentPage="competition" />);
 
@@ -146,5 +158,25 @@ describe('HeaderBar one-click trader shortcut', () => {
     fireEvent.click(screen.getByRole('button', { name: '一键生成交易员' }));
     expect(alertMock).toHaveBeenCalledWith('请先在配置页面设置DeepSeek或Gemini模型，并至少配置一个可用交易所。');
     expect(screen.queryByTestId('mock-trader-modal')).not.toBeInTheDocument();
+  });
+  it('shows loading alert when configs are still loading', async () => {
+    vi.mocked(api.getModelConfigs).mockReturnValue(new Promise(() => {}));
+    vi.mocked(api.getExchangeConfigs).mockReturnValue(new Promise(() => {}));
+
+    const view = render(<HeaderBar isLoggedIn language="zh" currentPage="competition" />);
+    await waitFor(() => expect(api.getModelConfigs).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: '一键生成交易员' }));
+    expect(alertMock).toHaveBeenCalledWith('正在同步交易员配置，请稍候…');
+    view.unmount();
+  });
+
+  it('renders mobile shortcut inside the menu when opened', async () => {
+    render(<HeaderBar isLoggedIn language="en" currentPage="competition" />);
+    await waitFor(() => expect(api.getModelConfigs).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByLabelText('Toggle navigation menu'));
+    const shortcutButtons = screen.getAllByRole('button', { name: 'One-Click Trader' });
+    expect(shortcutButtons.length).toBeGreaterThanOrEqual(2);
   });
 });

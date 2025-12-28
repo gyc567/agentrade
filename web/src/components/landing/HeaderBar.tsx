@@ -107,6 +107,7 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
 
   const oneClickLabel = t('oneClickTraderAction', language)
   const oneClickTooltip = t('oneClickTraderTooltip', language)
+  const menuToggleLabel = t('navToggleLabel', language)
 
   const handleOpenOneClickShortcut = (options?: { closeMobileMenu?: boolean }) => {
     if (!isLoggedIn) return
@@ -521,6 +522,9 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
 
           {/* Mobile Menu Button */}
           <motion.button
+            data-testid="mobile-menu-toggle"
+            aria-label={menuToggleLabel}
+            title={menuToggleLabel}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className='md:hidden'
             style={{ color: 'var(--brand-light-gray)' }}
@@ -540,7 +544,7 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
         style={{ background: 'var(--brand-dark-gray)', borderTop: '1px solid rgba(240, 185, 11, 0.1)' }}
       >
         <div className='px-4 py-4 space-y-3'>
-          {isLoggedIn && (
+          {isLoggedIn && mobileMenuOpen && (
             <button
               onClick={() => handleOpenOneClickShortcut({ closeMobileMenu: true })}
               disabled={isLoadingTraderConfigs}

@@ -1040,3 +1040,5 @@ export function t(key: string, lang: Language, params?: Record<string, string | 
 
   return text;
 }
+    navToggleLabel: 'Toggle navigation menu',
+    navToggleLabel: '展开或收起导航菜单',
