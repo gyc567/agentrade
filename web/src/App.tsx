@@ -16,6 +16,7 @@ import AILearning from './components/AILearning';
 const UserProfilePage = React.lazy(() => import('./pages/UserProfilePage'));
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PaymentProvider } from './features/payment/contexts/PaymentProvider';
 import { t, type Language } from './i18n/translations';
 import type {
   SystemStatus,
@@ -818,10 +819,12 @@ function DecisionCard({ decision, language }: { decision: DecisionRecord; langua
 // Wrap App with providers
 export default function AppWithProviders() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </LanguageProvider>
+    <PaymentProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </LanguageProvider>
+    </PaymentProvider>
   );
 }
