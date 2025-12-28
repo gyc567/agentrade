@@ -10,13 +10,27 @@
  */
 
 import { ERROR_MESSAGES } from '../constants/errorCodes'
-import type { PaymentConfirmResponse } from '../types/payment'
+import type {
+  PaymentConfirmResponse,
+  CrossmintOrderRequest,
+  CrossmintOrderResponse,
+} from '../types/payment'
 
 /**
  * Payment API 服务接口
  * 定义了所有与后端通信的 API 方法
  */
 export interface PaymentApiService {
+  /**
+   * 创建 Crossmint 支付订单
+   * 调用后端 API，后端再调用 Crossmint API 创建订单
+   * @param packageId 套餐 ID
+   * @returns Crossmint 订单信息（包含 orderId 和 clientSecret）
+   */
+  createCrossmintOrder(
+    packageId: "starter" | "pro" | "vip"
+  ): Promise<CrossmintOrderResponse>
+
   /**
    * 确认支付成功
    * @param orderId 订单 ID
@@ -38,6 +52,53 @@ export interface PaymentApiService {
  */
 export class DefaultPaymentApiService implements PaymentApiService {
   constructor(private getAuthToken?: () => string | null) {}
+
+  /**
+   * 创建 Crossmint 订单
+   * KISS原则：简单的 HTTP POST 调用
+   */
+  async createCrossmintOrder(
+    packageId: "starter" | "pro" | "vip"
+  ): Promise<CrossmintOrderResponse> {
+    if (!packageId) {
+      throw new Error("Package ID is required")
+    }
+
+    try {
+      const response = await fetch("/api/payments/crossmint/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.getAuthToken?.() || ""}`,
+        },
+        body: JSON.stringify({
+          packageId,
+        } as CrossmintOrderRequest),
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(
+          error.error || `Backend returned ${response.status}`
+        )
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to create order")
+      }
+
+      return data as CrossmintOrderResponse
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to create Crossmint order"
+      console.error("[CreateCrossmintOrder Error]", message)
+      throw new Error(message)
+    }
+  }
 
   /**
    * 确认支付

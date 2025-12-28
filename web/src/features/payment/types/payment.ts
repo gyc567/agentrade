@@ -147,6 +147,29 @@ export interface PaymentConfirmResponse {
   }
 }
 
+/**
+ * Crossmint Order Creation Request
+ */
+export interface CrossmintOrderRequest {
+  packageId: "starter" | "pro" | "vip"
+}
+
+/**
+ * Crossmint Order Creation Response
+ * Returned by backend after creating order with Crossmint API
+ */
+export interface CrossmintOrderResponse {
+  success: boolean
+  orderId: string
+  clientSecret: string
+  amount: number
+  currency: string
+  credits: number
+  expiresAt?: string
+  error?: string
+  code?: string
+}
+
 export interface PaymentErrorResponse {
   success: false
   error: string
