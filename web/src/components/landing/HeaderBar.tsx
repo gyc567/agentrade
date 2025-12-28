@@ -1,37 +1,21 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { Menu, X, ChevronDown } from 'lucide-react'
 import { t, type Language } from '../../i18n/translations'
 import Web3ConnectButton from '../Web3ConnectButton'
 import { CreditsDisplay } from '../CreditsDisplay'
 import { PaymentModal } from '../../features/payment/components/PaymentModal'
-import { TraderConfigModal } from '../TraderConfigModal'
 import { api } from '../../lib/api'
 import type { AIModel, Exchange, CreateTraderRequest } from '../../types'
+import {
+  filterEnabledModels,
+  filterPlatformModels,
+  filterReadyExchanges,
+} from '../../lib/traderConfigFilters'
 
-const PLATFORM_MODEL_KEYWORDS = ['deepseek', 'gemini']
-
-const hasValue = (value?: string | null) => Boolean(value && value.trim().length > 0)
-
-const isPlatformModel = (model: AIModel) => {
-  const id = (model.id || '').toLowerCase()
-  const name = (model.name || '').toLowerCase()
-  return PLATFORM_MODEL_KEYWORDS.some(keyword => id.includes(keyword) || name.includes(keyword))
-}
-
-const isExchangeReady = (exchange: Exchange) => {
-  if (!exchange.enabled) return false
-
-  if (exchange.id === 'aster') {
-    return hasValue(exchange.asterUser) && hasValue(exchange.asterSigner) && hasValue(exchange.asterPrivateKey)
-  }
-
-  if (exchange.id === 'hyperliquid') {
-    return hasValue(exchange.apiKey) && hasValue(exchange.hyperliquidWalletAddr)
-  }
-
-  return hasValue(exchange.apiKey) && hasValue(exchange.secretKey)
-}
+const LazyTraderConfigModal = lazy(() =>
+  import('../TraderConfigModal').then((mod) => ({ default: mod.TraderConfigModal }))
+)
 
 interface HeaderBarProps {
   onLoginClick?: () => void
@@ -93,10 +77,8 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
         ])
         if (ignore) return
 
-        const eligibleModels = models
-          .filter(model => model.enabled && hasValue(model.apiKey))
-          .filter(isPlatformModel)
-        const eligibleExchanges = exchanges.filter(isExchangeReady)
+        const eligibleModels = filterPlatformModels(filterEnabledModels(models))
+        const eligibleExchanges = filterReadyExchanges(exchanges)
 
         setAvailableModels(eligibleModels)
         setAvailableExchanges(eligibleExchanges)
@@ -831,16 +813,18 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
       </motion.div>
 
       {/* One-Click Trader Modal */}
-      {isOneClickModalOpen && (
-        <TraderConfigModal
-          isOpen={isOneClickModalOpen}
-          isEditMode={false}
-          availableModels={availableModels}
-          availableExchanges={availableExchanges}
-          onSave={handleOneClickSave}
-          onClose={() => setIsOneClickModalOpen(false)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {isOneClickModalOpen && (
+          <LazyTraderConfigModal
+            isOpen={isOneClickModalOpen}
+            isEditMode={false}
+            availableModels={availableModels}
+            availableExchanges={availableExchanges}
+            onSave={handleOneClickSave}
+            onClose={() => setIsOneClickModalOpen(false)}
+          />
+        )}
+      </Suspense>
 
       {/* Payment Modal */}
       <PaymentModal

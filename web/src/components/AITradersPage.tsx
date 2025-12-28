@@ -9,6 +9,7 @@ import { getExchangeIcon } from './ExchangeIcons';
 import { getModelIcon } from './ModelIcons';
 import { TraderConfigModal } from './TraderConfigModal';
 import { Bot, Brain, Landmark, BarChart3, Trash2, Plus, Users, AlertTriangle } from 'lucide-react';
+import { filterEnabledModels, filterReadyExchanges } from '../lib/traderConfigFilters';
 
 // 获取友好的AI模型名称
 function getModelDisplayName(modelId: string): string {
@@ -112,26 +113,8 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
   const configuredExchanges = allExchanges || [];
   
   // 只在创建交易员时使用已启用且配置完整的
-  const enabledModels = allModels?.filter(m => m.enabled && m.apiKey) || [];
-  const enabledExchanges = allExchanges?.filter(e => {
-    if (!e.enabled) return false;
-
-    // Aster 交易所需要特殊字段
-    if (e.id === 'aster') {
-      return e.asterUser && e.asterUser.trim() !== '' && 
-             e.asterSigner && e.asterSigner.trim() !== '' && 
-             e.asterPrivateKey && e.asterPrivateKey.trim() !== '';
-    }
-
-    // Hyperliquid 只需要私钥（作为apiKey）和钱包地址
-    if (e.id === 'hyperliquid') {
-      return e.apiKey && e.apiKey.trim() !== '' && 
-             e.hyperliquidWalletAddr && e.hyperliquidWalletAddr.trim() !== '';
-    }
-
-    // Binance 等其他交易所需要 apiKey 和 secretKey
-    return e.apiKey && e.apiKey.trim() !== '' && e.secretKey && e.secretKey.trim() !== '';
-  }) || [];
+  const enabledModels = filterEnabledModels(allModels || []);
+  const enabledExchanges = filterReadyExchanges(allExchanges || []);
 
   // 检查模型是否正在被运行中的交易员使用
   const isModelInUse = (modelId: string) => {
