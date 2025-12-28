@@ -93,7 +93,7 @@ func (d *Database) CreatePaymentOrder(order *PaymentOrder) error {
 		metadataJSON = order.Metadata
 	}
 
-	return withRetry(func() (struct{}, error) {
+	_, err := withRetry(func() (interface{}, error) {
 		_, err := d.exec(`
 			INSERT INTO payment_orders (
 				id, crossmint_order_id, user_id, package_id, amount,
@@ -105,8 +105,9 @@ func (d *Database) CreatePaymentOrder(order *PaymentOrder) error {
 			order.Amount, order.Currency, order.Credits, order.Status,
 			order.PaymentMethod, order.CrossmintClientSecret, metadataJSON,
 		)
-		return struct{}{}, err
+		return nil, err
 	})
+	return err
 }
 
 // GetPaymentOrderByID 根据订单ID查询订单
@@ -236,7 +237,7 @@ func (d *Database) UpdatePaymentOrderStatus(orderID, status string, failedReason
 		return fmt.Errorf("无效的订单状态: %s", status)
 	}
 
-	return withRetry(func() (struct{}, error) {
+	_, err := withRetry(func() (interface{}, error) {
 		var err error
 		if status == PaymentStatusCompleted {
 			// 完成状态设置completed_at时间戳
@@ -259,8 +260,9 @@ func (d *Database) UpdatePaymentOrderStatus(orderID, status string, failedReason
 				WHERE id = $2
 			`, status, orderID)
 		}
-		return struct{}{}, err
+		return nil, err
 	})
+	return err
 }
 
 // UpdatePaymentOrderWithCrossmintID 更新订单关联Crossmint订单ID
@@ -269,7 +271,7 @@ func (d *Database) UpdatePaymentOrderWithCrossmintID(orderID, crossmintOrderID, 
 		return fmt.Errorf("订单ID和Crossmint订单ID不能为空")
 	}
 
-	return withRetry(func() (struct{}, error) {
+	_, err := withRetry(func() (interface{}, error) {
 		_, err := d.exec(`
 			UPDATE payment_orders
 			SET crossmint_order_id = $1,
@@ -278,20 +280,22 @@ func (d *Database) UpdatePaymentOrderWithCrossmintID(orderID, crossmintOrderID, 
 			    updated_at = NOW()
 			WHERE id = $4
 		`, crossmintOrderID, clientSecret, PaymentStatusProcessing, orderID)
-		return struct{}{}, err
+		return nil, err
 	})
+	return err
 }
 
 // MarkPaymentOrderWebhookReceived 标记订单webhook已接收
 func (d *Database) MarkPaymentOrderWebhookReceived(crossmintOrderID string) error {
-	return withRetry(func() (struct{}, error) {
+	_, err := withRetry(func() (interface{}, error) {
 		_, err := d.exec(`
 			UPDATE payment_orders
 			SET webhook_received_at = NOW(), updated_at = NOW()
 			WHERE crossmint_order_id = $1
 		`, crossmintOrderID)
-		return struct{}{}, err
+		return nil, err
 	})
+	return err
 }
 
 // GetUserPaymentOrders 获取用户支付订单列表
