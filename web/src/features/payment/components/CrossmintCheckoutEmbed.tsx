@@ -1,89 +1,62 @@
 /**
  * Crossmint Checkout Embed Component
- * Wraps official Crossmint SDK component
+ * Simple wrapper for Crossmint SDK embedded checkout
  *
- * Design Principle: KISS (Keep It Simple, Stupid)
- * - Single responsibility: Display Crossmint embedded checkout
- * - Minimal props: Only what's needed
- * - Clean interface: Easy to use and test
+ * Design: KISS - Keep It Simple, Stupid
+ * - Single responsibility: Display Crossmint checkout iframe
+ * - Minimal dependencies: Only React and Crossmint SDK
+ * - Clean props: orderId + clientSecret
+ * - Event handling: Via backend webhooks (not frontend events)
+ *
+ * IMPORTANT: When using existing orderId, Crossmint SDK does NOT support onEvent callbacks.
+ * Payment status updates must be handled via:
+ * 1. Backend webhooks (POST /api/webhooks/crossmint) - source of truth
+ * 2. Frontend polling or WebSocket to check order status
  */
 
 import { CrossmintEmbeddedCheckout } from "@crossmint/client-sdk-react-ui"
-import type { PaymentPackage } from "../types/payment"
 
 interface CrossmintCheckoutEmbedProps {
-  /** Payment package to purchase */
-  package: PaymentPackage
-  /** Callback when payment succeeds */
-  onSuccess: (orderId: string) => void
-  /** Callback when payment fails */
-  onError: (error: string) => void
-  /** API Key for Crossmint */
-  apiKey: string
+  /** Order ID from backend (returned after createOrder) */
+  orderId: string
+
+  /** Client secret from backend */
+  clientSecret: string
 }
 
 /**
  * Crossmint Embedded Checkout Component
- * Uses official SDK - no custom API calls needed
+ *
+ * Uses official Crossmint SDK with orderId (created by backend)
+ * Backend has already created the order with Crossmint API
+ *
+ * Event Flow:
+ * 1. User completes payment in Crossmint iframe
+ * 2. Crossmint sends webhook to backend (POST /api/webhooks/crossmint)
+ * 3. Backend verifies payment and updates order status
+ * 4. Frontend polls backend or receives WebSocket notification
+ * 5. Frontend shows success/error message based on order status
  */
 export function CrossmintCheckoutEmbed({
-  package: pkg,
-  onSuccess,
-  onError,
-  apiKey,
+  orderId,
+  clientSecret,
 }: CrossmintCheckoutEmbedProps) {
-  // Transform package to Crossmint line items format
-  const totalCredits = pkg.credits.amount + (pkg.credits.bonusAmount || 0)
-
   return (
-    <CrossmintEmbeddedCheckout
-      // Line items define what user is purchasing
-      lineItems={{
-        collectionLocator: `crossmint:${pkg.id}`,
-        callData: {
-          totalPrice: pkg.price.amount.toString(),
-          quantity: 1,
-        },
-      }}
-      // Payment configuration
-      payment={{
-        crypto: {
-          enabled: true,
-          defaultCurrency: pkg.price.currency.toLowerCase(),
-        },
-      }}
-      // Locale
-      locale="en-US"
-      // Event handlers
-      onEvent={(event) => {
-        console.log("[Crossmint Event]", event.type, event.payload)
-
-        switch (event.type) {
-          case "order:process.finished":
-            // Payment completed successfully
-            if (event.payload.successfulTransactionIdentifiers?.length > 0) {
-              const orderId = event.payload.successfulTransactionIdentifiers[0]
-              onSuccess(orderId)
-            }
-            break
-
-          case "payment:process.rejected":
-          case "payment:preparation.failed":
-          case "transaction:fulfillment.failed":
-            // Payment failed
-            onError(event.payload.error?.message || "Payment failed")
-            break
-
-          case "payment:process.canceled":
-            // User cancelled
-            onError("Payment cancelled by user")
-            break
-
-          default:
-            // Other events - just log
-            break
-        }
-      }}
-    />
+    <div className="crossmint-checkout-container">
+      <CrossmintEmbeddedCheckout
+        // Use existing order created by backend
+        orderId={orderId}
+        clientSecret={clientSecret}
+        // Payment methods configured by backend when creating order
+        payment={{
+          crypto: {
+            enabled: true,
+          },
+          fiat: {
+            enabled: true,
+          },
+        }}
+      />
+    </div>
   )
 }

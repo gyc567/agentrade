@@ -17,9 +17,13 @@ import { ERROR_MESSAGES } from "../constants/errorCodes"
 
 export class PaymentOrchestrator {
   constructor(
-    private crossmintService: any,
+    _crossmintService: any, // @deprecated - No longer used, kept for backward compatibility
     private apiService: PaymentApiService
-  ) {}
+  ) {
+    // _crossmintService is no longer used in the new implementation
+    // All Crossmint API calls go through backend API now
+    // Not stored as class property to avoid unused warning
+  }
 
   /**
    * Validates and retrieves a payment package
@@ -83,6 +87,12 @@ export class PaymentOrchestrator {
 
   /**
    * Creates a payment session with Crossmint
+   *
+   * New implementation: Uses backend API instead of direct Crossmint calls
+   * Backend handles Crossmint API integration securely with server-side key
+   *
+   * @param packageId Package ID (starter/pro/vip)
+   * @returns Order ID from Crossmint (not session ID anymore)
    */
   async createPaymentSession(packageId: string): Promise<string> {
     // Validate package
@@ -91,38 +101,26 @@ export class PaymentOrchestrator {
       throw new Error(validation.error)
     }
 
-    const pkg = validation.package
-
-    // Create line items for Crossmint
-    const lineItems = [
-      {
-        price: pkg.price.amount.toString(),
-        currency: pkg.price.currency,
-        quantity: 1,
-        metadata: {
-          packageId: pkg.id,
-          credits:
-            pkg.credits.amount + (pkg.credits.bonusAmount || 0),
-        },
-      },
-    ]
-
-    // Initialize Crossmint checkout
     try {
-      const sessionId = await this.crossmintService.initializeCheckout({
-        lineItems,
-        checkoutProps: {
-          payment: {
-            allowedMethods: ["crypto"],
-          },
-          preferredChains: ["polygon", "base", "arbitrum"],
-        },
-      })
+      // Call backend API to create Crossmint order
+      // Backend will call Crossmint API with server-side key
+      const response = await this.apiService.createCrossmintOrder(
+        packageId as "starter" | "pro" | "vip"
+      )
 
-      return sessionId
+      if (!response.success || !response.orderId) {
+        throw new Error(response.error || "Failed to create order")
+      }
+
+      console.log("[PaymentOrchestrator] Order created:", response.orderId)
+
+      // Return orderId (will be used by frontend to display checkout)
+      return response.orderId
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error"
+      console.error("[PaymentOrchestrator] Failed to create order:", message)
       throw new Error(
-        `${ERROR_MESSAGES.CROSSMINT_ERROR}: ${(error as Error).message}`
+        `${ERROR_MESSAGES.CROSSMINT_ERROR}: ${message}`
       )
     }
   }
