@@ -4,6 +4,7 @@ import { Menu, X, ChevronDown } from 'lucide-react'
 import { t, type Language } from '../../i18n/translations'
 import Web3ConnectButton from '../Web3ConnectButton'
 import { CreditsDisplay } from '../CreditsDisplay'
+import { PaymentModal } from '../../features/payment/components/PaymentModal'
 
 interface HeaderBarProps {
   onLoginClick?: () => void
@@ -21,6 +22,7 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const userDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -246,8 +248,27 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
               {!['login', 'register'].includes(currentPage || '') && (
                 <div className='flex items-center gap-3'>
                   {/* Credits Display - Only show when logged in */}
-                  {isLoggedIn && <CreditsDisplay />}
-                  
+                  {isLoggedIn && <CreditsDisplay onOpenPayment={() => setIsPaymentModalOpen(true)} />}
+
+                  {/* Credits Packages Button */}
+                  <button
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    className="px-4 py-2 rounded text-sm font-semibold transition-all"
+                    style={{
+                      background: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#0056b3'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#007bff'}
+                    aria-label={language === 'zh' ? '打开用户积分套餐购买面板' : 'Open credit packages'}
+                    title={language === 'zh' ? '点击购买更多积分' : 'Click to purchase credits'}
+                  >
+                    {language === 'zh' ? '积分套餐' : 'Packages'}
+                  </button>
+
                   {/* Web3 Connect Button - Always show except on login/register pages */}
                   <Web3ConnectButton size="small" variant="secondary" />
                   
@@ -589,8 +610,28 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
             <div className='mt-4 pt-4' style={{ borderTop: '1px solid var(--panel-border)' }}>
               {/* Credits Display for mobile */}
               <div className='px-3 py-2 mb-2'>
-                <CreditsDisplay />
+                <CreditsDisplay onOpenPayment={() => setIsPaymentModalOpen(true)} />
               </div>
+
+              {/* Credits Packages Button for mobile */}
+              <button
+                onClick={() => {
+                  setIsPaymentModalOpen(true)
+                  setMobileMenuOpen(false)
+                }}
+                className='w-full px-4 py-2 mb-2 rounded text-sm font-semibold transition-all'
+                style={{
+                  background: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#0056b3'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#007bff'}
+              >
+                {language === 'zh' ? '积分套餐' : 'Packages'}
+              </button>
+
               <div className='flex items-center gap-2 px-3 py-2 mb-2 rounded' style={{ background: 'var(--panel-bg)' }}>
                 <div className='w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold' style={{ background: 'var(--brand-yellow)', color: 'var(--brand-black)' }}>
                   {user.email[0].toUpperCase()}
@@ -638,6 +679,12 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
           )}
         </div>
       </motion.div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+      />
     </nav>
   )
 }
