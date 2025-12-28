@@ -17,6 +17,7 @@ const UserProfilePage = React.lazy(() => import('./pages/UserProfilePage'));
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PaymentProvider } from './features/payment/contexts/PaymentProvider';
+import { CrossmintProvider } from '@crossmint/client-sdk-react-ui';
 import { t, type Language } from './i18n/translations';
 import type {
   SystemStatus,
@@ -818,13 +819,17 @@ function DecisionCard({ decision, language }: { decision: DecisionRecord; langua
 
 // Wrap App with providers
 export default function AppWithProviders() {
+  const apiKey = import.meta.env.VITE_CROSSMINT_CLIENT_API_KEY;
+
   return (
-    <PaymentProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </LanguageProvider>
-    </PaymentProvider>
+    <CrossmintProvider apiKey={apiKey}>
+      <PaymentProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </LanguageProvider>
+      </PaymentProvider>
+    </CrossmintProvider>
   );
 }

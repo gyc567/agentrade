@@ -6,8 +6,23 @@
 
 import type { PaymentPackage, CrossmintLineItem } from "../types/payment"
 
+export interface CheckoutConfig {
+  lineItems: CrossmintLineItem[]
+  checkoutProps?: {
+    payment?: {
+      allowedMethods?: string[]
+    }
+    preferredChains?: string[]
+  }
+  successCallbackURL?: string
+  failureCallbackURL?: string
+  locale?: string
+}
+
 export class CrossmintService {
   private apiKey: string
+  private checkoutConfig: CheckoutConfig | null = null
+  private eventListeners: Map<string, ((event: any) => void)[]> = new Map()
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || import.meta.env.VITE_CROSSMINT_CLIENT_API_KEY || ""
@@ -27,16 +42,76 @@ export class CrossmintService {
   }
 
   /**
-   * Initialize Crossmint checkout
-   * This is typically called by React components
+   * Initialize Crossmint checkout via API
+   * Creates a checkout session and returns session ID for embedded checkout
    */
-  async initializeCheckout(): Promise<void> {
+  async initializeCheckout(config: CheckoutConfig): Promise<string> {
     if (!this.isConfigured()) {
       throw new Error("Crossmint API Key is not configured")
     }
 
-    // The actual SDK initialization is handled by CrossmintProvider
-    // This method is for reference and future enhancements
+    this.checkoutConfig = config
+
+    try {
+      // Call Crossmint API to create checkout session
+      const response = await fetch("https://api.crossmint.com/2022-06-09/embedded-checkouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": this.apiKey,
+        },
+        body: JSON.stringify({
+          lineItems: config.lineItems,
+          payment: config.checkoutProps?.payment || {
+            allowedMethods: ["crypto"],
+          },
+          preferredChains: config.checkoutProps?.preferredChains || ["polygon", "base", "arbitrum"],
+          successUrl: config.successCallbackURL,
+          cancelUrl: config.failureCallbackURL,
+          locale: config.locale || "en-US",
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(
+          error.message || `Crossmint API error: ${response.statusText}`
+        )
+      }
+
+      const data = await response.json()
+      const sessionId = data.id || data.sessionId
+
+      if (!sessionId) {
+        throw new Error("No session ID returned from Crossmint")
+      }
+
+      console.log("[Crossmint] Checkout session created:", sessionId)
+      return sessionId
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error"
+      console.error("[Crossmint] Failed to initialize checkout:", message)
+      throw new Error(`Failed to initialize Crossmint checkout: ${message}`)
+    }
+  }
+
+  /**
+   * Opens checkout in a new window/iframe
+   * Uses the session ID returned from initializeCheckout
+   */
+  async openCheckout(sessionId: string): Promise<void> {
+    if (!sessionId) {
+      throw new Error("No session ID provided")
+    }
+
+    try {
+      // Open Crossmint checkout URL
+      const checkoutUrl = `https://embedded-checkout.crossmint.com?sessionId=${sessionId}`
+      window.open(checkoutUrl, "Crossmint_Checkout", "width=600,height=700")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error"
+      throw new Error(`Failed to open checkout: ${message}`)
+    }
   }
 
   /**
@@ -114,6 +189,37 @@ export class CrossmintService {
   }
 
   /**
+   * Registers event listener for checkout events
+   */
+  on(eventType: string, callback: (event: any) => void): void {
+    if (!this.eventListeners.has(eventType)) {
+      this.eventListeners.set(eventType, [])
+    }
+    this.eventListeners.get(eventType)?.push(callback)
+  }
+
+  /**
+   * Removes event listener
+   */
+  off(eventType: string, callback: (event: any) => void): void {
+    const listeners = this.eventListeners.get(eventType)
+    if (listeners) {
+      const index = listeners.indexOf(callback)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }
+
+  /**
+   * Emits an event to all registered listeners
+   */
+  emit(eventType: string, event: any): void {
+    const listeners = this.eventListeners.get(eventType) || []
+    listeners.forEach(callback => callback(event))
+  }
+
+  /**
    * Verifies a Crossmint payment signature
    * For enhanced security (optional but recommended)
    */
@@ -141,12 +247,21 @@ export class CrossmintService {
   }
 
   /**
+   * Gets current checkout configuration
+   */
+  getCheckoutConfig(): CheckoutConfig | null {
+    return this.checkoutConfig
+  }
+
+  /**
    * Resets the service state
    */
   reset(): void {
-    // Service state reset (currently no state to reset)
+    this.checkoutConfig = null
+    this.eventListeners.clear()
   }
 }
 
 // Export singleton instance
 export const crossmintService = new CrossmintService()
+

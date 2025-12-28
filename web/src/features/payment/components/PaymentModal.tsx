@@ -186,11 +186,44 @@ export function PaymentModal({
           </div>
         )}
 
-        {/* Loading State */}
-        {context.paymentStatus === "loading" && (
+        {/* Loading/Checkout State */}
+        {context.paymentStatus === "loading" && !context.sessionId && (
           <div className={styles.loadingContainer} role="status" aria-live="polite" aria-label="Payment processing">
             <div className={styles.spinner} aria-hidden="true" />
-            <p className={styles.loadingText}>处理中...</p>
+            <p className={styles.loadingText}>初始化支付...</p>
+          </div>
+        )}
+
+        {/* Checkout State - Display Crossmint Checkout */}
+        {context.paymentStatus === "loading" && context.sessionId && (
+          <div className={styles.checkoutContainer} role="region" aria-label="Payment checkout">
+            <div className={styles.checkoutFrame}>
+              <iframe
+                src={`https://embedded-checkout.crossmint.com?sessionId=${context.sessionId}`}
+                title="Crossmint Checkout"
+                style={{
+                  width: '100%',
+                  height: '600px',
+                  border: 'none',
+                  borderRadius: '8px',
+                }}
+                onLoad={() => {
+                  console.log('[Crossmint] Checkout iframe loaded')
+                }}
+              />
+            </div>
+            <div className={styles.checkoutHelper}>
+              <p className={styles.checkoutText}>完成支付后，订单将自动确认</p>
+              <button
+                onClick={() => {
+                  context.handlePaymentError('用户取消支付')
+                }}
+                className={styles.cancelButton}
+                aria-label="Cancel payment"
+              >
+                取消
+              </button>
+            </div>
           </div>
         )}
 

@@ -114,6 +114,7 @@ export interface PaymentContextType {
   selectedPackage: PaymentPackage | null
   paymentStatus: "idle" | "loading" | "success" | "error"
   orderId: string | null
+  sessionId: string | null
   creditsAdded: number
   error: string | null
   selectPackage: (packageId: string) => void

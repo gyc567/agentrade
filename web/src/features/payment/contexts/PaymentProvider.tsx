@@ -35,6 +35,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     "idle"
   )
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [creditsAdded, setCreditsAdded] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,10 +64,13 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     async (packageId: string) => {
       setPaymentStatus("loading")
       setError(null)
+      setSessionId(null)
 
       try {
-        await orchestrator.createPaymentSession(packageId)
-        // SDK will handle the rest via events
+        const newSessionId = await orchestrator.createPaymentSession(packageId)
+        setSessionId(newSessionId)
+        console.log("[Payment] Checkout session created:", newSessionId)
+        // Payment modal will display checkout using sessionId
       } catch (err) {
         const message = err instanceof Error ? err.message : "Payment initiation failed"
         setError(message)
@@ -107,6 +111,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     setSelectedPackage(null)
     setPaymentStatus("idle")
     setOrderId(null)
+    setSessionId(null)
     setCreditsAdded(0)
     setError(null)
   }, [])
@@ -119,6 +124,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     selectedPackage,
     paymentStatus,
     orderId,
+    sessionId,
     creditsAdded,
     error,
     selectPackage,
