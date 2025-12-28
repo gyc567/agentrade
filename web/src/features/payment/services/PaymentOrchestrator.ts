@@ -119,6 +119,7 @@ export class PaymentOrchestrator {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error"
       console.error("[PaymentOrchestrator] Failed to create order:", message)
+      console.error("[PaymentOrchestrator] Detailed Error:", error)
       throw new Error(
         `${ERROR_MESSAGES.CROSSMINT_ERROR}: ${message}`
       )

@@ -47,6 +47,7 @@ export class CrossmintService {
    */
   async initializeCheckout(config: CheckoutConfig): Promise<string> {
     if (!this.isConfigured()) {
+      console.error("[CrossmintService] API Key is missing! Please set NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY in .env")
       throw new Error("Crossmint API Key is not configured")
     }
 
