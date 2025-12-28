@@ -5,6 +5,33 @@ import { t, type Language } from '../../i18n/translations'
 import Web3ConnectButton from '../Web3ConnectButton'
 import { CreditsDisplay } from '../CreditsDisplay'
 import { PaymentModal } from '../../features/payment/components/PaymentModal'
+import { TraderConfigModal } from '../TraderConfigModal'
+import { api } from '../../lib/api'
+import type { AIModel, Exchange, CreateTraderRequest } from '../../types'
+
+const PLATFORM_MODEL_KEYWORDS = ['deepseek', 'gemini']
+
+const hasValue = (value?: string | null) => Boolean(value && value.trim().length > 0)
+
+const isPlatformModel = (model: AIModel) => {
+  const id = (model.id || '').toLowerCase()
+  const name = (model.name || '').toLowerCase()
+  return PLATFORM_MODEL_KEYWORDS.some(keyword => id.includes(keyword) || name.includes(keyword))
+}
+
+const isExchangeReady = (exchange: Exchange) => {
+  if (!exchange.enabled) return false
+
+  if (exchange.id === 'aster') {
+    return hasValue(exchange.asterUser) && hasValue(exchange.asterSigner) && hasValue(exchange.asterPrivateKey)
+  }
+
+  if (exchange.id === 'hyperliquid') {
+    return hasValue(exchange.apiKey) && hasValue(exchange.hyperliquidWalletAddr)
+  }
+
+  return hasValue(exchange.apiKey) && hasValue(exchange.secretKey)
+}
 
 interface HeaderBarProps {
   onLoginClick?: () => void
@@ -23,6 +50,10 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false)
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [isOneClickModalOpen, setIsOneClickModalOpen] = useState(false)
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([])
+  const [availableExchanges, setAvailableExchanges] = useState<Exchange[]>([])
+  const [isLoadingTraderConfigs, setIsLoadingTraderConfigs] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const userDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -42,6 +73,88 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadTraderConfigs() {
+      if (!isLoggedIn) {
+        setAvailableModels([])
+        setAvailableExchanges([])
+        setIsLoadingTraderConfigs(false)
+        return
+      }
+
+      setIsLoadingTraderConfigs(true)
+      try {
+        const [models, exchanges] = await Promise.all([
+          api.getModelConfigs(),
+          api.getExchangeConfigs()
+        ])
+        if (ignore) return
+
+        const eligibleModels = models
+          .filter(model => model.enabled && hasValue(model.apiKey))
+          .filter(isPlatformModel)
+        const eligibleExchanges = exchanges.filter(isExchangeReady)
+
+        setAvailableModels(eligibleModels)
+        setAvailableExchanges(eligibleExchanges)
+      } catch (error) {
+        if (!ignore) {
+          console.error('Failed to load configs for one-click trader:', error)
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingTraderConfigs(false)
+        }
+      }
+    }
+
+    loadTraderConfigs()
+    return () => {
+      ignore = true
+    }
+  }, [isLoggedIn])
+
+  useEffect(() => {
+    if (!isLoggedIn && isOneClickModalOpen) {
+      setIsOneClickModalOpen(false)
+    }
+  }, [isLoggedIn, isOneClickModalOpen])
+
+  const oneClickLabel = t('oneClickTraderAction', language)
+  const oneClickTooltip = t('oneClickTraderTooltip', language)
+
+  const handleOpenOneClickShortcut = (options?: { closeMobileMenu?: boolean }) => {
+    if (!isLoggedIn) return
+
+    if (isLoadingTraderConfigs) {
+      window.alert(t('oneClickTraderLoading', language))
+      return
+    }
+
+    if (!availableModels.length || !availableExchanges.length) {
+      window.alert(t('oneClickTraderMissingConfig', language))
+      return
+    }
+
+    if (options?.closeMobileMenu) {
+      setMobileMenuOpen(false)
+    }
+
+    setIsOneClickModalOpen(true)
+  }
+
+  const handleOneClickSave = async (payload: CreateTraderRequest) => {
+    try {
+      await api.createTrader(payload)
+    } catch (error) {
+      console.error('Failed to create trader from header shortcut:', error)
+      window.alert(t('oneClickTraderCreateFailed', language))
+      throw error instanceof Error ? error : new Error('Failed to create trader')
+    }
+  }
 
   return (
     <nav className='fixed top-0 w-full z-50 header-bar'>
@@ -65,6 +178,30 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
               {isLoggedIn ? (
                 // Main app navigation when logged in
                 <>
+                  <button
+                    onClick={() => handleOpenOneClickShortcut()}
+                    disabled={isLoadingTraderConfigs}
+                    aria-busy={isLoadingTraderConfigs}
+                    aria-label={oneClickTooltip}
+                    title={oneClickTooltip}
+                    className='text-sm font-bold transition-all duration-300 relative focus:outline-2 focus:outline-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed'
+                    style={{
+                      background: 'var(--brand-yellow)',
+                      color: 'var(--brand-black)',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 16px rgba(240, 185, 11, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 6px 18px rgba(240, 185, 11, 0.45)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(240, 185, 11, 0.3)'
+                    }}
+                  >
+                    {oneClickLabel}
+                  </button>
+                  
                   <button
                     onClick={() => {
                       console.log('实时 button clicked, onPageChange:', onPageChange);
@@ -421,6 +558,19 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
         style={{ background: 'var(--brand-dark-gray)', borderTop: '1px solid rgba(240, 185, 11, 0.1)' }}
       >
         <div className='px-4 py-4 space-y-3'>
+          {isLoggedIn && (
+            <button
+              onClick={() => handleOpenOneClickShortcut({ closeMobileMenu: true })}
+              disabled={isLoadingTraderConfigs}
+              aria-label={oneClickTooltip}
+              title={oneClickTooltip}
+              className='w-full text-sm font-semibold px-4 py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+              style={{ background: 'var(--brand-yellow)', color: 'var(--brand-black)' }}
+            >
+              {oneClickLabel}
+            </button>
+          )}
+
           {/* New Navigation Tabs */}
           {isLoggedIn ? (
             <button
@@ -680,6 +830,18 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
         </div>
       </motion.div>
 
+      {/* One-Click Trader Modal */}
+      {isOneClickModalOpen && (
+        <TraderConfigModal
+          isOpen={isOneClickModalOpen}
+          isEditMode={false}
+          availableModels={availableModels}
+          availableExchanges={availableExchanges}
+          onSave={handleOneClickSave}
+          onClose={() => setIsOneClickModalOpen(false)}
+        />
+      )}
+
       {/* Payment Modal */}
       <PaymentModal
         isOpen={isPaymentModalOpen}
@@ -688,4 +850,3 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
     </nav>
   )
 }
-

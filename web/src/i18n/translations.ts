@@ -21,6 +21,11 @@ export const translations = {
     configNav: 'Config',
     dashboardNav: 'Dashboard',
     userProfile: 'User Profile',
+    oneClickTraderAction: 'One-Click Trader',
+    oneClickTraderTooltip: 'Open the trader creation modal',
+    oneClickTraderLoading: 'Loading trader configuration...',
+    oneClickTraderMissingConfig: 'Please configure at least one DeepSeek or Gemini model and exchange before creating a trader.',
+    oneClickTraderCreateFailed: 'Failed to create trader. Please try again.',
 
     // User Profile
     profile: {
@@ -505,6 +510,11 @@ export const translations = {
     configNav: '配置',
     dashboardNav: '看板',
     userProfile: '用户信息',
+    oneClickTraderAction: '一键生成交易员',
+    oneClickTraderTooltip: '打开交易员创建面板',
+    oneClickTraderLoading: '正在同步交易员配置，请稍候…',
+    oneClickTraderMissingConfig: '请先在配置页面设置DeepSeek或Gemini模型，并至少配置一个可用交易所。',
+    oneClickTraderCreateFailed: '创建交易员失败，请稍后重试。',
 
     // Footer
     footerTitle: 'Agent Trade - AI交易系统',
