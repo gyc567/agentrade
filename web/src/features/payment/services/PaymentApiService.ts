@@ -10,6 +10,7 @@
  */
 
 import { ERROR_MESSAGES } from '../constants/errorCodes'
+import { mapToBackendPackageId } from '../constants/packages'
 import type {
   PaymentConfirmResponse,
   CrossmintOrderRequest,
@@ -65,6 +66,9 @@ export class DefaultPaymentApiService implements PaymentApiService {
     }
 
     try {
+      // 将前端Package ID映射为后端数据库ID
+      const backendPackageId = mapToBackendPackageId(packageId)
+
       const response = await fetch("/api/payments/crossmint/create-order", {
         method: "POST",
         headers: {
@@ -72,7 +76,7 @@ export class DefaultPaymentApiService implements PaymentApiService {
           Authorization: `Bearer ${this.getAuthToken?.() || ""}`,
         },
         body: JSON.stringify({
-          packageId,
+          packageId: backendPackageId,
         } as CrossmintOrderRequest),
       })
 

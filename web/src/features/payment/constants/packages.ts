@@ -5,6 +5,23 @@
 
 import type { PaymentPackage } from "../types/payment"
 
+/**
+ * Package ID映射：前端ID -> 数据库ID
+ * 前端使用简化的ID(starter/pro/vip)，后端使用数据库中的实际ID
+ */
+export const PACKAGE_ID_MAP: Record<string, string> = {
+  starter: "basic_100", // $9.99 - 100积分
+  pro: "standard_500", // $39.99 - 550积分
+  vip: "premium_1200", // $79.99 - 1400积分
+}
+
+/**
+ * 将前端Package ID转换为数据库ID
+ */
+export function mapToBackendPackageId(frontendId: string): string {
+  return PACKAGE_ID_MAP[frontendId] || frontendId
+}
+
 export const PAYMENT_PACKAGES: Record<
   "starter" | "pro" | "vip",
   PaymentPackage
