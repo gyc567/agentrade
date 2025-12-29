@@ -87,6 +87,14 @@ func (d *Database) CreatePaymentOrder(order *PaymentOrder) error {
 		order.Currency = "USDT"
 	}
 
+	// 将空字符串转换为NULL（用于可空字段）
+	toNullString := func(s string) interface{} {
+		if s == "" {
+			return nil
+		}
+		return s
+	}
+
 	// 序列化metadata
 	var metadataJSON []byte
 	if order.Metadata != nil {
@@ -101,9 +109,9 @@ func (d *Database) CreatePaymentOrder(order *PaymentOrder) error {
 				crossmint_client_secret, metadata, created_at, updated_at
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
 		`,
-			order.ID, order.CrossmintOrderID, order.UserID, order.PackageID,
+			order.ID, toNullString(order.CrossmintOrderID), order.UserID, order.PackageID,
 			order.Amount, order.Currency, order.Credits, order.Status,
-			order.PaymentMethod, order.CrossmintClientSecret, metadataJSON,
+			toNullString(order.PaymentMethod), toNullString(order.CrossmintClientSecret), metadataJSON,
 		)
 		return nil, err
 	})
