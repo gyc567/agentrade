@@ -16,6 +16,7 @@ export { usePricingData } from "./hooks/usePricingData"
 // Components
 export { PaymentModal } from "./components/PaymentModal"
 export { PricingCard } from "./components/PricingCard"
+export { PaymentErrorBoundary, PaymentErrorFallback } from "./components/PaymentErrorBoundary"
 
 // Types
 export type {
@@ -52,3 +53,10 @@ export {
 } from "./services/paymentValidator"
 
 export { formatPrice, formatCredits, formatPercentage } from "./utils/formatPrice"
+
+// Security Utils
+export {
+  verifyHmacSignature,
+  createHmacSignature,
+  timingSafeEqual,
+} from "./utils/signatureVerification"

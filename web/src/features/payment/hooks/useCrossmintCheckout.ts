@@ -5,6 +5,7 @@
 
 import { useCallback } from "react"
 import { usePaymentContext } from "../contexts/PaymentProvider"
+import { paymentLogger } from "../utils/logger"
 import type { CrossmintEvent } from "../types/payment"
 
 interface UseCrossmintCheckoutReturn {
@@ -48,7 +49,7 @@ export function useCrossmintCheckout(): UseCrossmintCheckoutReturn {
           break
 
         default:
-          console.log("[Crossmint Event]", event.type)
+          paymentLogger.debug("Crossmint Event", event.type)
       }
     },
     [context]

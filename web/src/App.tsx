@@ -818,18 +818,19 @@ function DecisionCard({ decision, language }: { decision: DecisionRecord; langua
 }
 
 // Wrap App with providers
+// Order: Auth (outermost) > Crossmint > Payment > Language (innermost)
 export default function AppWithProviders() {
   const apiKey = import.meta.env.VITE_CROSSMINT_CLIENT_API_KEY;
 
   return (
-    <CrossmintProvider apiKey={apiKey}>
-      <PaymentProvider>
-        <LanguageProvider>
-          <AuthProvider>
+    <AuthProvider>
+      <CrossmintProvider apiKey={apiKey}>
+        <PaymentProvider>
+          <LanguageProvider>
             <App />
-          </AuthProvider>
-        </LanguageProvider>
-      </PaymentProvider>
-    </CrossmintProvider>
+          </LanguageProvider>
+        </PaymentProvider>
+      </CrossmintProvider>
+    </AuthProvider>
   );
 }

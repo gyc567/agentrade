@@ -8,6 +8,15 @@
  * - 自动处理过期检查
  */
 
+// Inline logger to avoid circular dependency
+const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV
+
+const cacheLogger = {
+  warn: (...args: unknown[]) => {
+    if (isDev) console.warn(...args)
+  }
+}
+
 /**
  * 创建一个 localStorage 缓存工具
  *
@@ -57,7 +66,7 @@ export function createStorageCache<T>(key: string, ttl: number) {
       return cached.value
     } catch (error) {
       // JSON.parse 失败或其他错误，清除坏数据
-      console.warn(`[Cache] Failed to read cache for "${key}":`, error)
+      cacheLogger.warn(`[Cache] Failed to read cache for "${key}":`, error)
       localStorage.removeItem(key)
       return null
     }
@@ -75,7 +84,7 @@ export function createStorageCache<T>(key: string, ttl: number) {
       }
       localStorage.setItem(key, JSON.stringify(data))
     } catch (error) {
-      console.warn(`[Cache] Failed to set cache for "${key}":`, error)
+      cacheLogger.warn(`[Cache] Failed to set cache for "${key}":`, error)
       // 缓存写入失败（quota exceeded等），继续运行但数据不会被缓存
     }
   }
@@ -87,7 +96,7 @@ export function createStorageCache<T>(key: string, ttl: number) {
     try {
       localStorage.removeItem(key)
     } catch (error) {
-      console.warn(`[Cache] Failed to clear cache for "${key}":`, error)
+      cacheLogger.warn(`[Cache] Failed to clear cache for "${key}":`, error)
     }
   }
 

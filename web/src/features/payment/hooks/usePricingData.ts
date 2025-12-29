@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { PaymentPackage } from '../types/payment'
 import { PAYMENT_PACKAGES } from '../constants/packages'
 import { useStorageCache } from './useStorageCache'
+import { paymentLogger } from '../utils/logger'
 
 interface UsePricingDataResult {
   packages: PaymentPackage[]
@@ -109,7 +110,7 @@ export function usePricingData(): UsePricingDataResult {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error fetching pricing data'
 
-      console.error('[Pricing] API Error:', errorMessage)
+      paymentLogger.error('[Pricing] API Error:', errorMessage)
       setError(err instanceof Error ? err : new Error(errorMessage))
 
       // Use fallback hardcoded packages

@@ -12,9 +12,9 @@
 import React, { useContext, useState, useCallback, useMemo } from "react"
 import { PaymentContext } from "./PaymentContext"
 import { PaymentOrchestrator } from "../services/PaymentOrchestrator"
-import { CrossmintService } from "../services/CrossmintService"
 import { getPackage } from "../services/paymentValidator"
 import { createDefaultPaymentApiService } from "../services/PaymentApiService"
+import { paymentLogger } from "../utils/logger"
 import type { PaymentContextType, PaymentPackage } from "../types/payment"
 import type { PaymentApiService } from "../services/PaymentApiService"
 
@@ -45,10 +45,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
   // [C2] 如果没有注入 apiService，则创建默认实现
   const orchestrator = useMemo(() => {
     const api = apiService || createDefaultPaymentApiService()
-    return new PaymentOrchestrator(
-      new CrossmintService(),
-      api
-    )
+    return new PaymentOrchestrator(api)
   }, [apiService])
 
   const selectPackage = useCallback((packageId: string) => {
@@ -75,7 +72,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
         setOrderId(result.orderId)
         setClientSecret(result.clientSecret)
         setSessionId(result.orderId) // @deprecated - for backward compatibility
-        console.log("[Payment] Crossmint order created:", result.orderId)
+        paymentLogger.debug("Payment", "Crossmint order created:", result.orderId)
         // Payment modal will display CrossmintCheckoutEmbed using orderId + clientSecret
       } catch (err) {
         const message = err instanceof Error ? err.message : "Payment initiation failed"

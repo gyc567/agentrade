@@ -5,6 +5,8 @@
  */
 
 import type { PaymentPackage, CrossmintLineItem } from "../types/payment"
+import { paymentLogger } from "../utils/logger"
+import { verifyHmacSignature } from "../utils/signatureVerification"
 
 export interface CheckoutConfig {
   lineItems: CrossmintLineItem[]
@@ -28,7 +30,7 @@ export class CrossmintService {
     this.apiKey = apiKey || import.meta.env.VITE_CROSSMINT_CLIENT_API_KEY || ""
 
     if (!this.apiKey) {
-      console.warn(
+      paymentLogger.warn(
         "[Crossmint] API Key not configured. Payment feature will not work."
       )
     }
@@ -47,7 +49,7 @@ export class CrossmintService {
    */
   async initializeCheckout(config: CheckoutConfig): Promise<string> {
     if (!this.isConfigured()) {
-      console.error("[CrossmintService] API Key is missing! Please set NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY in .env")
+      paymentLogger.error("[CrossmintService] API Key is missing! Please set VITE_CROSSMINT_CLIENT_API_KEY in .env")
       throw new Error("Crossmint API Key is not configured")
     }
 
@@ -87,11 +89,11 @@ export class CrossmintService {
         throw new Error("No session ID returned from Crossmint")
       }
 
-      console.log("[Crossmint] Checkout session created:", sessionId)
+      paymentLogger.debug("Crossmint", "Checkout session created:", sessionId)
       return sessionId
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error"
-      console.error("[Crossmint] Failed to initialize checkout:", message)
+      paymentLogger.error("[Crossmint] Failed to initialize checkout:", message)
       throw new Error(`Failed to initialize Crossmint checkout: ${message}`)
     }
   }
@@ -215,26 +217,38 @@ export class CrossmintService {
   /**
    * Emits an event to all registered listeners
    */
-  emit(eventType: string, event: any): void {
+  emit(eventType: string, event: unknown): void {
     const listeners = this.eventListeners.get(eventType) || []
     listeners.forEach(callback => callback(event))
   }
 
   /**
-   * Verifies a Crossmint payment signature
-   * For enhanced security (optional but recommended)
+   * Verifies a Crossmint payment signature using HMAC-SHA256
+   * For enhanced security on webhook payloads
+   *
+   * @param signature - The signature from Crossmint header
+   * @param payload - The raw request body
+   * @param secret - The webhook secret (optional, uses env if not provided)
+   * @returns Promise<boolean> - True if signature is valid
    */
-  verifyPaymentSignature(signature: unknown): boolean {
-    // In a real implementation, this would verify the signature
-    // using the Crossmint webhook secret
-    // For now, we accept it and let the backend verify
-
-    if (!signature || typeof signature !== "string") {
+  async verifyPaymentSignature(
+    signature: string,
+    payload: string,
+    secret?: string
+  ): Promise<boolean> {
+    if (!signature || !payload) {
       return false
     }
 
-    // Basic check - in production, use HMAC verification
-    return signature.length > 0
+    const webhookSecret = secret || import.meta.env.VITE_CROSSMINT_WEBHOOK_SECRET || ''
+
+    if (!webhookSecret) {
+      paymentLogger.warn("[Crossmint] Webhook secret not configured, skipping verification")
+      // In development, allow without verification
+      return import.meta.env.DEV
+    }
+
+    return verifyHmacSignature(signature, payload, webhookSecret)
   }
 
   /**

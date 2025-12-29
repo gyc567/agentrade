@@ -11,6 +11,7 @@
 
 import { ERROR_MESSAGES } from '../constants/errorCodes'
 import { mapToBackendPackageId } from '../constants/packages'
+import { paymentLogger } from '../utils/logger'
 import type {
   PaymentConfirmResponse,
   CrossmintOrderRequest,
@@ -99,7 +100,7 @@ export class DefaultPaymentApiService implements PaymentApiService {
         error instanceof Error
           ? error.message
           : "Failed to create Crossmint order"
-      console.error("[CreateCrossmintOrder Error]", message)
+      paymentLogger.error("[CreateCrossmintOrder Error]", message)
       throw new Error(message)
     }
   }
@@ -163,7 +164,7 @@ export class DefaultPaymentApiService implements PaymentApiService {
       const data = await response.json()
       return data.data?.orders || []
     } catch (error) {
-      console.error('[Payment History Error]', error)
+      paymentLogger.error('[Payment History Error]', error)
       throw new Error(ERROR_MESSAGES.INTERNAL_ERROR || 'Failed to fetch payment history')
     }
   }

@@ -11,6 +11,7 @@
  */
 
 import { getPackage, validatePackageForPayment } from "./paymentValidator"
+import { paymentLogger } from "../utils/logger"
 import type { PaymentPackage, PaymentConfirmResponse } from "../types/payment"
 import type { PaymentApiService } from "./PaymentApiService"
 import { ERROR_MESSAGES } from "../constants/errorCodes"
@@ -24,14 +25,7 @@ export interface PaymentSessionResult {
 }
 
 export class PaymentOrchestrator {
-  constructor(
-    _crossmintService: any, // @deprecated - No longer used, kept for backward compatibility
-    private apiService: PaymentApiService
-  ) {
-    // _crossmintService is no longer used in the new implementation
-    // All Crossmint API calls go through backend API now
-    // Not stored as class property to avoid unused warning
-  }
+  constructor(private apiService: PaymentApiService) {}
 
   /**
    * Validates and retrieves a payment package
@@ -120,7 +114,7 @@ export class PaymentOrchestrator {
         throw new Error(response.error || "Failed to create order")
       }
 
-      console.log("[PaymentOrchestrator] Order created:", response.orderId)
+      paymentLogger.debug("PaymentOrchestrator", "Order created:", response.orderId)
 
       // Return both orderId and clientSecret for CrossmintEmbeddedCheckout
       return {
@@ -129,8 +123,7 @@ export class PaymentOrchestrator {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error"
-      console.error("[PaymentOrchestrator] Failed to create order:", message)
-      console.error("[PaymentOrchestrator] Detailed Error:", error)
+      paymentLogger.error("[PaymentOrchestrator] Failed to create order:", message)
       throw new Error(
         `${ERROR_MESSAGES.CROSSMINT_ERROR}: ${message}`
       )
@@ -163,11 +156,11 @@ export class PaymentOrchestrator {
     const errorMessage =
       typeof error === "string" ? error : error.message
 
-    console.error("[Payment Error]", errorMessage)
+    paymentLogger.error("[Payment Error]", errorMessage)
 
     // Could emit events or trigger monitoring here
     if (typeof window !== "undefined" && window.__paymentErrorCallback) {
-      ;(window as any).__paymentErrorCallback(errorMessage)
+      ;(window as unknown as { __paymentErrorCallback: (err: string) => void }).__paymentErrorCallback(errorMessage)
     }
   }
 
@@ -175,7 +168,7 @@ export class PaymentOrchestrator {
    * Retrieves payment history for a user
    * [C2] 使用注入的 apiService 替代直接 fetch
    */
-  async getPaymentHistory(userId: string): Promise<any[]> {
+  async getPaymentHistory(userId: string): Promise<unknown[]> {
     if (!userId || typeof userId !== "string") {
       throw new Error(ERROR_MESSAGES.INVALID_USER)
     }
@@ -184,7 +177,7 @@ export class PaymentOrchestrator {
       // 委托给注入的 API 服务处理实际的 HTTP 调用
       return await this.apiService.getPaymentHistory(userId)
     } catch (error) {
-      console.error("[Payment History Error]", error)
+      paymentLogger.error("[Payment History Error]", error)
       throw new Error(ERROR_MESSAGES.INTERNAL_ERROR)
     }
   }
