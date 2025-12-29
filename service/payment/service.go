@@ -35,11 +35,12 @@ type Service interface {
 
 // PaymentService 支付服务实现
 type PaymentService struct {
-        db                   *config.Database
-        crossmintServerKey   string
+        db                     *config.Database
+        crossmintServerKey     string
         crossmintWebhookSecret string
-        crossmintAPIURL      string
-        httpClient           *http.Client
+        crossmintAPIURL        string
+        crossmintCollectionID  string
+        httpClient             *http.Client
 }
 
 // NewPaymentService 创建支付服务
@@ -47,22 +48,26 @@ func NewPaymentService(db *config.Database) Service {
         serverKey := os.Getenv("CROSSMINT_SERVER_API_KEY")
         webhookSecret := os.Getenv("CROSSMINT_WEBHOOK_SECRET")
         apiURL := os.Getenv("CROSSMINT_API_URL")
+        collectionID := os.Getenv("CROSSMINT_COLLECTION_ID")
 
         // 默认使用staging环境
         if apiURL == "" {
                 env := os.Getenv("CROSSMINT_ENVIRONMENT")
                 if env == "production" {
-                        apiURL = "https://api.crossmint.com"
+                        apiURL = "https://www.crossmint.com/api"
                 } else {
                         apiURL = "https://staging.crossmint.com/api"
                 }
         }
+
+        log.Printf("📦 [PaymentService] 初始化完成: API_URL=%s, CollectionID=%s", apiURL, collectionID)
 
         return &PaymentService{
                 db:                     db,
                 crossmintServerKey:     serverKey,
                 crossmintWebhookSecret: webhookSecret,
                 crossmintAPIURL:        apiURL,
+                crossmintCollectionID:  collectionID,
                 httpClient: &http.Client{
                         Timeout: 30 * time.Second,
                 },
@@ -150,26 +155,34 @@ func (s *PaymentService) CreateCrossmintOrder(ctx context.Context, order *config
                 log.Printf("❌ [CreateCrossmintOrder] Crossmint API密钥未配置")
                 return "", "", fmt.Errorf("Crossmint服务未配置：缺少API密钥")
         }
+
+        if s.crossmintCollectionID == "" {
+                log.Printf("❌ [CreateCrossmintOrder] Crossmint Collection ID未配置")
+                return "", "", fmt.Errorf("Crossmint服务未配置：缺少Collection ID")
+        }
+
         log.Printf("📦 [CreateCrossmintOrder] API密钥: %s...%s", s.crossmintServerKey[:4], s.crossmintServerKey[len(s.crossmintServerKey)-4:])
         log.Printf("📦 [CreateCrossmintOrder] API URL: %s", s.crossmintAPIURL)
+        log.Printf("📦 [CreateCrossmintOrder] Collection ID: %s", s.crossmintCollectionID)
 
         log.Printf("🔄 调用Crossmint API创建订单: orderID=%s, amount=%.2f %s",
                 order.ID, order.Amount, order.Currency)
 
-        // 构建Crossmint API请求
+        // 构建Crossmint API请求 (2022-06-09 API格式)
         requestBody := map[string]interface{}{
                 "payment": map[string]interface{}{
-                        "currency": order.Currency,
-                        "amount":   fmt.Sprintf("%.2f", order.Amount),
-                        "method":   "crypto",
+                        "method": "stripe-payment-element",
+                },
+                "lineItems": []map[string]interface{}{
+                        {
+                                "collectionLocator": fmt.Sprintf("crossmint:%s", s.crossmintCollectionID),
+                                "callData": map[string]interface{}{
+                                        "totalPrice": fmt.Sprintf("%.2f", order.Amount),
+                                        "quantity":   1,
+                                },
+                        },
                 },
                 "locale": "en-US",
-                "metadata": map[string]interface{}{
-                        "orderId":   order.ID,
-                        "packageId": order.PackageID,
-                        "credits":   order.Credits,
-                        "userId":    order.UserID,
-                },
         }
 
         jsonData, err := json.Marshal(requestBody)
@@ -177,8 +190,12 @@ func (s *PaymentService) CreateCrossmintOrder(ctx context.Context, order *config
                 return "", "", fmt.Errorf("序列化请求失败: %w", err)
         }
 
+        log.Printf("📦 [CreateCrossmintOrder] 请求体: %s", string(jsonData))
+
         // 发送HTTP请求到Crossmint
         apiURL := fmt.Sprintf("%s/2022-06-09/orders", s.crossmintAPIURL)
+        log.Printf("📦 [CreateCrossmintOrder] 完整API URL: %s", apiURL)
+
         req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonData))
         if err != nil {
                 return "", "", fmt.Errorf("创建HTTP请求失败: %w", err)
@@ -199,35 +216,43 @@ func (s *PaymentService) CreateCrossmintOrder(ctx context.Context, order *config
                 return "", "", fmt.Errorf("读取响应失败: %w", err)
         }
 
+        log.Printf("📦 [CreateCrossmintOrder] 响应状态码: %d", resp.StatusCode)
+        log.Printf("📦 [CreateCrossmintOrder] 响应体: %s", string(respBody))
+
         // 检查HTTP状态码
         if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
                 log.Printf("❌ Crossmint API错误 (状态码 %d): %s", resp.StatusCode, string(respBody))
                 return "", "", fmt.Errorf("Crossmint API返回错误 (状态码 %d): %s", resp.StatusCode, string(respBody))
         }
 
-        // 解析响应
+        // 解析响应 - Crossmint返回结构
         var crossmintResp struct {
-                OrderID      string `json:"orderId"`
                 ClientSecret string `json:"clientSecret"`
+                Order        struct {
+                        OrderID string `json:"orderId"`
+                } `json:"order"`
         }
 
         if err := json.Unmarshal(respBody, &crossmintResp); err != nil {
                 return "", "", fmt.Errorf("解析Crossmint响应失败: %w", err)
         }
 
-        if crossmintResp.OrderID == "" || crossmintResp.ClientSecret == "" {
+        orderID := crossmintResp.Order.OrderID
+        secret := crossmintResp.ClientSecret
+
+        if orderID == "" || secret == "" {
+                log.Printf("❌ [CreateCrossmintOrder] 响应缺少必要字段: orderId=%s, clientSecret=%s", orderID, secret)
                 return "", "", fmt.Errorf("Crossmint响应缺少必要字段")
         }
 
         // 更新订单关联Crossmint订单ID
-        if err := s.db.UpdatePaymentOrderWithCrossmintID(order.ID, crossmintResp.OrderID, crossmintResp.ClientSecret); err != nil {
+        if err := s.db.UpdatePaymentOrderWithCrossmintID(order.ID, orderID, secret); err != nil {
                 log.Printf("⚠️ 更新订单Crossmint ID失败: %v", err)
-                // 不返回错误，因为Crossmint订单已创建成功
         }
 
-        log.Printf("✅ Crossmint订单创建成功: crossmintOrderID=%s", crossmintResp.OrderID)
+        log.Printf("✅ Crossmint订单创建成功: crossmintOrderID=%s", orderID)
 
-        return crossmintResp.OrderID, crossmintResp.ClientSecret, nil
+        return orderID, secret, nil
 }
 
 // VerifyWebhookSignature 验证Crossmint webhook签名

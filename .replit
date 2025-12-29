@@ -27,16 +27,12 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bash -c \"(./nofx-backend 2>&1 | sed 's/^/[BACKEND] /') & (cd web && npm run dev 2>&1 | sed 's/^/[FRONTEND] /')\""
+args = "bash -c \"go build -o nofx-backend . && ((./nofx-backend 2>&1 | sed 's/^/[BACKEND] /') & (cd web && npm run dev 2>&1 | sed 's/^/[FRONTEND] /'))\""
 waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3000
 
 [[ports]]
 localPort = 8080
