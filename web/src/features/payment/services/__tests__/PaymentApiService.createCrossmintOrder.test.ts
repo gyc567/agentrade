@@ -50,7 +50,7 @@ describe("PaymentApiService - createCrossmintOrder", () => {
             "Content-Type": "application/json",
             Authorization: "Bearer test-token",
           }),
-          body: JSON.stringify({ packageId: "starter" }),
+          body: JSON.stringify({ packageId: "basic_100" }),
         })
       )
     })
@@ -294,7 +294,7 @@ describe("PaymentApiService - createCrossmintOrder", () => {
       // Assert
       const callArgs = mockFetch.mock.calls[0]
       const body = JSON.parse(callArgs[1].body)
-      expect(body).toEqual({ packageId: "pro" })
+      expect(body).toEqual({ packageId: "standard_500" })
     })
   })
 

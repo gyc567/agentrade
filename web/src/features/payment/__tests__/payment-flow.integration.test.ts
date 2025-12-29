@@ -224,6 +224,14 @@ describe('支付系统集成测试', () => {
   describe('场景 7: 支付流程的完整编排', () => {
     it('Orchestrator协调完整的支付流程', async () => {
       const mockApiService = {
+        createCrossmintOrder: vi.fn(async (packageId: string) => ({
+          success: true,
+          orderId: 'order-123',
+          clientSecret: 'secret-xyz',
+          amount: 10,
+          currency: 'USDT',
+          credits: 500
+        })),
         confirmPayment: vi.fn(async (orderId: string): Promise<PaymentConfirmResponse> => ({
           success: true,
           orderId,
@@ -240,22 +248,16 @@ describe('支付系统集成测试', () => {
         })
       } as any
 
-      const mockCrossmintService = {
-        initializeCheckout: vi.fn(async () => 'session-123')
-      } as any
-
-      const orchestrator = new PaymentOrchestrator(
-        mockCrossmintService,
-        mockApiService
-      )
+      const orchestrator = new PaymentOrchestrator(mockApiService)
 
       // 步骤1：验证套餐
       const validation = orchestrator.validatePackageForPayment('starter')
       expect(validation.valid).toBe(true)
 
       // 步骤2：创建支付会话
-      const sessionId = await orchestrator.createPaymentSession('starter')
-      expect(sessionId).toBe('session-123')
+      const session = await orchestrator.createPaymentSession('starter')
+      expect(session.orderId).toBe('order-123')
+      expect(session.clientSecret).toBe('secret-xyz')
 
       // 步骤3：处理支付成功
       const result = await orchestrator.handlePaymentSuccess('order-123')
