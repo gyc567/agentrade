@@ -169,6 +169,8 @@ func (s *PaymentService) CreateCrossmintOrder(ctx context.Context, order *config
                 order.ID, order.Amount, order.Currency)
 
         // 构建Crossmint API请求 (2022-06-09 API格式)
+        // 使用 collectionLocator 模式 - 价格由 Crossmint Collection 中的 NFT 配置决定
+        // 注意: Collection 中的 NFT 价格必须在 Staging 限制内 (通常 < $10)
         requestBody := map[string]interface{}{
                 "payment": map[string]interface{}{
                         "method": "stripe-payment-element",
