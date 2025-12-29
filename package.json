@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@crossmint/client-sdk-react-ui": "^2.6.13",
     "@types/node": "^24.10.0",
     "marked": "^17.0.1"
   }

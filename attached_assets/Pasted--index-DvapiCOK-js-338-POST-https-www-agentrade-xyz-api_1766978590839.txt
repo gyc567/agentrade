@@ -1,0 +1,73 @@
+现在测试积分套餐支付时，报错：index-DvapiCOK.js:338  POST https://www.agentrade.xyz/api/payments/crossmint/create-order 400 (Bad Request)
+createCrossmintOrder @ index-DvapiCOK.js:338
+createPaymentSession @ index-DvapiCOK.js:338
+(anonymous) @ index-DvapiCOK.js:338
+onClick @ index-DvapiCOK.js:338
+O @ index-DvapiCOK.js:37
+se @ index-DvapiCOK.js:37
+be @ index-DvapiCOK.js:37
+BS @ index-DvapiCOK.js:37
+LS @ index-DvapiCOK.js:37
+(anonymous) @ index-DvapiCOK.js:37
+sg @ index-DvapiCOK.js:40
+Io @ index-DvapiCOK.js:37
+sm @ index-DvapiCOK.js:37
+lr @ index-DvapiCOK.js:37
+Ee @ index-DvapiCOK.js:37
+index-DvapiCOK.js:338 [CreateCrossmintOrder Error] 创建订单失败
+createCrossmintOrder @ index-DvapiCOK.js:338
+await in createCrossmintOrder
+createPaymentSession @ index-DvapiCOK.js:338
+(anonymous) @ index-DvapiCOK.js:338
+onClick @ index-DvapiCOK.js:338
+O @ index-DvapiCOK.js:37
+se @ index-DvapiCOK.js:37
+be @ index-DvapiCOK.js:37
+BS @ index-DvapiCOK.js:37
+LS @ index-DvapiCOK.js:37
+(anonymous) @ index-DvapiCOK.js:37
+sg @ index-DvapiCOK.js:40
+Io @ index-DvapiCOK.js:37
+sm @ index-DvapiCOK.js:37
+lr @ index-DvapiCOK.js:37
+Ee @ index-DvapiCOK.js:37
+index-DvapiCOK.js:338 [PaymentOrchestrator] Failed to create order: 创建订单失败
+createPaymentSession @ index-DvapiCOK.js:338
+await in createPaymentSession
+(anonymous) @ index-DvapiCOK.js:338
+onClick @ index-DvapiCOK.js:338
+O @ index-DvapiCOK.js:37
+se @ index-DvapiCOK.js:37
+be @ index-DvapiCOK.js:37
+BS @ index-DvapiCOK.js:37
+LS @ index-DvapiCOK.js:37
+(anonymous) @ index-DvapiCOK.js:37
+sg @ index-DvapiCOK.js:40
+Io @ index-DvapiCOK.js:37
+sm @ index-DvapiCOK.js:37
+lr @ index-DvapiCOK.js:37
+Ee @ index-DvapiCOK.js:37
+index-DvapiCOK.js:338 [PaymentOrchestrator] Detailed Error: Error: 创建订单失败
+    at Lie.createCrossmintOrder (index-DvapiCOK.js:338:23359)
+    at async Bie.createPaymentSession (index-DvapiCOK.js:338:17975)
+    at async Object.initiatePayment (index-DvapiCOK.js:338:24884)
+    at async onClick (index-DvapiCOK.js:338:29972)
+createPaymentSession @ index-DvapiCOK.js:338
+await in createPaymentSession
+(anonymous) @ index-DvapiCOK.js:338
+onClick @ index-DvapiCOK.js:338
+O @ index-DvapiCOK.js:37
+se @ index-DvapiCOK.js:37
+be @ index-DvapiCOK.js:37
+BS @ index-DvapiCOK.js:37
+LS @ index-DvapiCOK.js:37
+(anonymous) @ index-DvapiCOK.js:37
+sg @ index-DvapiCOK.js:40
+Io @ index-DvapiCOK.js:37
+sm @ index-DvapiCOK.js:37
+lr @ index-DvapiCOK.js:37
+Ee @ index-DvapiCOK.js:37
+index-DvapiCOK.js:338 [Payment Error] 支付服务暂时不可用: 创建订单失败，深入分析下，找到3个原因，一一排除。用openspec来生成bug提案并修复。ultrathink
+	
+	
+	
