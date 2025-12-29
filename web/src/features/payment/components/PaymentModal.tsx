@@ -8,6 +8,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { usePaymentContext } from "../contexts/PaymentProvider"
 import { usePaymentPackages } from "../hooks/usePaymentPackages"
 import { formatPrice, formatCredits } from "../utils/formatPrice"
+import { CrossmintCheckoutEmbed } from "./CrossmintCheckoutEmbed"
 import type { PaymentPackage } from "../types/payment"
 import styles from "../styles/payment-modal.module.css"
 
@@ -186,30 +187,21 @@ export function PaymentModal({
           </div>
         )}
 
-        {/* Loading/Checkout State */}
-        {context.paymentStatus === "loading" && !context.sessionId && (
+        {/* Loading State - Before order created */}
+        {context.paymentStatus === "loading" && !context.orderId && (
           <div className={styles.loadingContainer} role="status" aria-live="polite" aria-label="Payment processing">
             <div className={styles.spinner} aria-hidden="true" />
             <p className={styles.loadingText}>初始化支付...</p>
           </div>
         )}
 
-        {/* Checkout State - Display Crossmint Checkout */}
-        {context.paymentStatus === "loading" && context.sessionId && (
+        {/* Checkout State - Display Crossmint Embedded Checkout */}
+        {context.paymentStatus === "loading" && context.orderId && context.clientSecret && (
           <div className={styles.checkoutContainer} role="region" aria-label="Payment checkout">
             <div className={styles.checkoutFrame}>
-              <iframe
-                src={`https://embedded-checkout.crossmint.com?sessionId=${context.sessionId}`}
-                title="Crossmint Checkout"
-                style={{
-                  width: '100%',
-                  height: '600px',
-                  border: 'none',
-                  borderRadius: '8px',
-                }}
-                onLoad={() => {
-                  console.log('[Crossmint] Checkout iframe loaded')
-                }}
+              <CrossmintCheckoutEmbed
+                orderId={context.orderId}
+                clientSecret={context.clientSecret}
               />
             </div>
             <div className={styles.checkoutHelper}>

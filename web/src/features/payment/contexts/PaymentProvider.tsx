@@ -35,7 +35,8 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     "idle"
   )
   const [orderId, setOrderId] = useState<string | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null) // @deprecated - kept for compatibility
   const [creditsAdded, setCreditsAdded] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -64,13 +65,18 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     async (packageId: string) => {
       setPaymentStatus("loading")
       setError(null)
+      setOrderId(null)
+      setClientSecret(null)
       setSessionId(null)
 
       try {
-        const newSessionId = await orchestrator.createPaymentSession(packageId)
-        setSessionId(newSessionId)
-        console.log("[Payment] Checkout session created:", newSessionId)
-        // Payment modal will display checkout using sessionId
+        // Get both orderId and clientSecret from backend
+        const result = await orchestrator.createPaymentSession(packageId)
+        setOrderId(result.orderId)
+        setClientSecret(result.clientSecret)
+        setSessionId(result.orderId) // @deprecated - for backward compatibility
+        console.log("[Payment] Crossmint order created:", result.orderId)
+        // Payment modal will display CrossmintCheckoutEmbed using orderId + clientSecret
       } catch (err) {
         const message = err instanceof Error ? err.message : "Payment initiation failed"
         setError(message)
@@ -111,6 +117,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     setSelectedPackage(null)
     setPaymentStatus("idle")
     setOrderId(null)
+    setClientSecret(null)
     setSessionId(null)
     setCreditsAdded(0)
     setError(null)
@@ -124,6 +131,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
     selectedPackage,
     paymentStatus,
     orderId,
+    clientSecret,
     sessionId,
     creditsAdded,
     error,

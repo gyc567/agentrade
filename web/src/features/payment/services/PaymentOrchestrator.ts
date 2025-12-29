@@ -15,6 +15,14 @@ import type { PaymentPackage, PaymentConfirmResponse } from "../types/payment"
 import type { PaymentApiService } from "./PaymentApiService"
 import { ERROR_MESSAGES } from "../constants/errorCodes"
 
+/**
+ * Payment session result containing order credentials
+ */
+export interface PaymentSessionResult {
+  orderId: string
+  clientSecret: string
+}
+
 export class PaymentOrchestrator {
   constructor(
     _crossmintService: any, // @deprecated - No longer used, kept for backward compatibility
@@ -92,9 +100,9 @@ export class PaymentOrchestrator {
    * Backend handles Crossmint API integration securely with server-side key
    *
    * @param packageId Package ID (starter/pro/vip)
-   * @returns Order ID from Crossmint (not session ID anymore)
+   * @returns Order credentials (orderId + clientSecret) for CrossmintEmbeddedCheckout
    */
-  async createPaymentSession(packageId: string): Promise<string> {
+  async createPaymentSession(packageId: string): Promise<PaymentSessionResult> {
     // Validate package
     const validation = this.validatePackageForPayment(packageId)
     if (!validation.valid) {
@@ -108,14 +116,17 @@ export class PaymentOrchestrator {
         packageId as "starter" | "pro" | "vip"
       )
 
-      if (!response.success || !response.orderId) {
+      if (!response.success || !response.orderId || !response.clientSecret) {
         throw new Error(response.error || "Failed to create order")
       }
 
       console.log("[PaymentOrchestrator] Order created:", response.orderId)
 
-      // Return orderId (will be used by frontend to display checkout)
-      return response.orderId
+      // Return both orderId and clientSecret for CrossmintEmbeddedCheckout
+      return {
+        orderId: response.orderId,
+        clientSecret: response.clientSecret
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error"
       console.error("[PaymentOrchestrator] Failed to create order:", message)

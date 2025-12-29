@@ -114,7 +114,8 @@ export interface PaymentContextType {
   selectedPackage: PaymentPackage | null
   paymentStatus: "idle" | "loading" | "success" | "error"
   orderId: string | null
-  sessionId: string | null
+  clientSecret: string | null  // Crossmint client secret for embedded checkout
+  sessionId: string | null     // @deprecated - use orderId + clientSecret instead
   creditsAdded: number
   error: string | null
   selectPackage: (packageId: string) => void
