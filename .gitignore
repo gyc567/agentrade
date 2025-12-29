@@ -52,3 +52,4 @@ resetUserPwd/
 # Git worktrees (Crystal)
 /worktrees/
 /worktree-*/
+.env*.local
