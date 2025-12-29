@@ -1,0 +1,10 @@
+# Ignore Go backend files
+*.go
+api/
+config/
+service/
+database/
+scripts/
+
+# Keep only web frontend
+!web/
