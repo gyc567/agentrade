@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import useSWR from 'swr';
 import { api } from './lib/api';
 import { EquityChart } from './components/EquityChart';
@@ -17,6 +17,7 @@ const UserProfilePage = React.lazy(() => import('./pages/UserProfilePage'));
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PaymentProvider } from './features/payment/contexts/PaymentProvider';
+import { useUserCredits } from './hooks/useUserCredits';
 import { CrossmintProvider } from '@crossmint/client-sdk-react-ui';
 import { t, type Language } from './i18n/translations';
 import type {
@@ -817,6 +818,23 @@ function DecisionCard({ decision, language }: { decision: DecisionRecord; langua
   );
 }
 
+// PaymentProvider wrapper that integrates with credits refresh
+// This component must be inside AuthProvider to use useUserCredits
+function PaymentProviderWithCreditsRefresh({ children }: { children: React.ReactNode }) {
+  const { refetch } = useUserCredits();
+
+  const handlePaymentSuccess = useCallback(async (_creditsAdded: number) => {
+    // 支付成功后刷新用户积分余额
+    await refetch();
+  }, [refetch]);
+
+  return (
+    <PaymentProvider onPaymentSuccess={handlePaymentSuccess}>
+      {children}
+    </PaymentProvider>
+  );
+}
+
 // Wrap App with providers
 // Order: Auth (outermost) > Crossmint > Payment > Language (innermost)
 export default function AppWithProviders() {
@@ -825,11 +843,11 @@ export default function AppWithProviders() {
   return (
     <AuthProvider>
       <CrossmintProvider apiKey={apiKey}>
-        <PaymentProvider>
+        <PaymentProviderWithCreditsRefresh>
           <LanguageProvider>
             <App />
           </LanguageProvider>
-        </PaymentProvider>
+        </PaymentProviderWithCreditsRefresh>
       </CrossmintProvider>
     </AuthProvider>
   );

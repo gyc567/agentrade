@@ -25,9 +25,14 @@ interface PaymentProviderProps {
    * 如果不提供，则使用默认实现
    */
   apiService?: PaymentApiService
+  /**
+   * 可选：支付成功后的回调函数
+   * 用于刷新用户积分等操作
+   */
+  onPaymentSuccess?: (creditsAdded: number) => void
 }
 
-export function PaymentProvider({ children, apiService }: PaymentProviderProps) {
+export function PaymentProvider({ children, apiService, onPaymentSuccess }: PaymentProviderProps) {
   const [selectedPackage, setSelectedPackage] = useState<PaymentPackage | null>(
     null
   )
@@ -94,6 +99,11 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
         setCreditsAdded(result.creditsAdded)
         setOrderId(result.order.id)
         setPaymentStatus("success")
+
+        // 支付成功后触发回调（用于刷新用户积分）
+        if (onPaymentSuccess) {
+          onPaymentSuccess(result.creditsAdded)
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Payment confirmation failed"
         setError(message)
@@ -101,7 +111,7 @@ export function PaymentProvider({ children, apiService }: PaymentProviderProps) 
         orchestrator.handlePaymentError(err as Error)
       }
     },
-    [orchestrator]
+    [orchestrator, onPaymentSuccess]
   )
 
   const handlePaymentError = useCallback((errorMessage: string) => {

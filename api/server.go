@@ -274,6 +274,7 @@ func (s *Server) setupRoutes() {
                 // 支付订单管理（需要认证，单独定义避免嵌套问题）
                 paymentGroup := protected.Group("/payments", middleware.RateLimitByUser(10, time.Minute))
                 paymentGroup.POST("/crossmint/create-order", s.paymentHandler.CreateOrder)
+                paymentGroup.POST("/confirm", s.paymentHandler.ConfirmPayment)
                 paymentGroup.GET("/orders/:id", s.paymentHandler.GetOrder)
                 paymentGroup.GET("/orders", s.paymentHandler.GetUserOrders)
 

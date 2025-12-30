@@ -25,6 +25,7 @@ type Service interface {
         // 订单管理
         CreatePaymentOrder(ctx context.Context, userID, packageID string) (*config.PaymentOrder, error)
         GetPaymentOrder(ctx context.Context, orderID string) (*config.PaymentOrder, error)
+        GetPaymentOrderByCrossmintID(ctx context.Context, crossmintOrderID string) (*config.PaymentOrder, error)
         GetUserPaymentOrders(ctx context.Context, userID string, page, limit int) ([]*config.PaymentOrder, int, error)
 
         // Crossmint集成
@@ -134,6 +135,15 @@ func (s *PaymentService) GetPaymentOrder(ctx context.Context, orderID string) (*
         }
 
         return s.db.GetPaymentOrderByID(orderID)
+}
+
+// GetPaymentOrderByCrossmintID 根据Crossmint订单ID查询订单
+func (s *PaymentService) GetPaymentOrderByCrossmintID(ctx context.Context, crossmintOrderID string) (*config.PaymentOrder, error) {
+        if crossmintOrderID == "" {
+                return nil, fmt.Errorf("Crossmint订单ID不能为空")
+        }
+
+        return s.db.GetPaymentOrderByCrossmintID(crossmintOrderID)
 }
 
 // GetUserPaymentOrders 获取用户支付订单列表

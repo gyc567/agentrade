@@ -62,6 +62,21 @@ type GetOrdersResponse struct {
         Code    string                 `json:"code,omitempty"`
 }
 
+// ConfirmPaymentRequest 确认支付请求
+type ConfirmPaymentRequest struct {
+        OrderID string `json:"orderId" binding:"required"`
+}
+
+// ConfirmPaymentResponse 确认支付响应
+type ConfirmPaymentResponse struct {
+        Success      bool   `json:"success"`
+        Status       string `json:"status"`
+        CreditsAdded int    `json:"creditsAdded,omitempty"`
+        Message      string `json:"message,omitempty"`
+        Error        string `json:"error,omitempty"`
+        Code         string `json:"code,omitempty"`
+}
+
 // CreateOrder 创建支付订单并调用Crossmint API
 func (h *Handler) CreateOrder(c *gin.Context) {
         log.Printf("📦 [CreateOrder] 收到创建订单请求")
@@ -263,5 +278,89 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{
                 "success": true,
                 "received": true,
+        })
+}
+
+// ConfirmPayment 确认支付完成
+// 前端在支付成功后调用此接口查询订单状态和积分到账情况
+func (h *Handler) ConfirmPayment(c *gin.Context) {
+        log.Printf("📦 [ConfirmPayment] 收到确认支付请求")
+
+        // 获取认证用户ID
+        userID, exists := c.Get("user_id")
+        if !exists {
+                log.Printf("❌ [ConfirmPayment] 认证失败: user_id不存在")
+                c.JSON(http.StatusUnauthorized, ConfirmPaymentResponse{
+                        Success: false,
+                        Error:   "认证失败",
+                        Code:    "UNAUTHORIZED",
+                })
+                return
+        }
+        log.Printf("📦 [ConfirmPayment] 用户ID: %s", userID.(string))
+
+        // 解析请求
+        var req ConfirmPaymentRequest
+        if err := c.ShouldBindJSON(&req); err != nil {
+                log.Printf("❌ [ConfirmPayment] 请求参数解析失败: %v", err)
+                c.JSON(http.StatusBadRequest, ConfirmPaymentResponse{
+                        Success: false,
+                        Error:   "订单ID不能为空",
+                        Code:    "INVALID_REQUEST",
+                })
+                return
+        }
+        log.Printf("📦 [ConfirmPayment] 查询订单: %s", req.OrderID)
+
+        // 根据Crossmint订单ID查询订单
+        order, err := h.service.GetPaymentOrderByCrossmintID(c.Request.Context(), req.OrderID)
+        if err != nil {
+                log.Printf("❌ [ConfirmPayment] 订单不存在: %s, error: %v", req.OrderID, err)
+                c.JSON(http.StatusNotFound, ConfirmPaymentResponse{
+                        Success: false,
+                        Error:   "订单不存在",
+                        Code:    "ORDER_NOT_FOUND",
+                })
+                return
+        }
+
+        // 验证订单所有权
+        if order.UserID != userID.(string) {
+                log.Printf("❌ [ConfirmPayment] 无权访问订单: orderID=%s, orderUserID=%s, requestUserID=%s",
+                        req.OrderID, order.UserID, userID.(string))
+                c.JSON(http.StatusForbidden, ConfirmPaymentResponse{
+                        Success: false,
+                        Error:   "无权访问该订单",
+                        Code:    "FORBIDDEN",
+                })
+                return
+        }
+
+        // 根据订单状态返回消息
+        var message string
+        switch order.Status {
+        case config.PaymentStatusCompleted:
+                message = "支付成功，积分已到账"
+        case config.PaymentStatusPending:
+                message = "支付处理中，请稍候"
+        case config.PaymentStatusProcessing:
+                message = "支付确认中，请稍候"
+        case config.PaymentStatusFailed:
+                message = "支付失败"
+        case config.PaymentStatusCancelled:
+                message = "订单已取消"
+        default:
+                message = "未知状态"
+        }
+
+        log.Printf("✅ [ConfirmPayment] 订单状态查询成功: orderID=%s, status=%s, credits=%d",
+                req.OrderID, order.Status, order.Credits)
+
+        // 返回订单状态和积分信息
+        c.JSON(http.StatusOK, ConfirmPaymentResponse{
+                Success:      order.Status == config.PaymentStatusCompleted,
+                Status:       string(order.Status),
+                CreditsAdded: order.Credits,
+                Message:      message,
         })
 }
