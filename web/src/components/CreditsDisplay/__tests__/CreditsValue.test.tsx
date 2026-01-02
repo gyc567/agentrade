@@ -1,5 +1,13 @@
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { CreditsValue } from '../CreditsValue';
+
+vi.mock('../../../contexts/LanguageContext', () => ({
+  useLanguage: () => ({
+    language: 'en',
+    setLanguage: vi.fn(),
+  }),
+}));
 
 describe('CreditsValue', () => {
   describe('number format (default)', () => {
