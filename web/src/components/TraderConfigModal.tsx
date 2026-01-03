@@ -59,8 +59,8 @@ export function TraderConfigModal({
     override_base_prompt: false,
     system_prompt_template: 'default',
     is_cross_margin: true,
-    use_coin_pool: false,
-    use_oi_top: false,
+    use_coin_pool: true,
+    use_oi_top: true,
     initial_balance: 1000,
     scan_interval_minutes: 3,
   });
