@@ -6,7 +6,6 @@ import (
         "log"
         "nofx/market"
         "nofx/mcp"
-        "nofx/pool"
         "nofx/service/news"
         "strings"
         "time"
