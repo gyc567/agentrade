@@ -18,11 +18,12 @@ import (
 
 // OKXTrader OKX交易所交易器
 type OKXTrader struct {
-        apiKey     string
-        secretKey  string
-        passphrase string
-        baseURL    string
-        client     *http.Client
+        apiKey       string
+        secretKey    string
+        passphrase   string
+        baseURL      string
+        isSimulated  bool
+        client       *http.Client
 
         // 缓存机制（遵循现有模式）
         cachedBalance     map[string]interface{}
@@ -64,6 +65,7 @@ func NewOKXTrader(apiKey, secretKey, passphrase string, testnet bool) (*OKXTrade
                 secretKey:     secretKey,
                 passphrase:    passphrase,
                 baseURL:       baseURL,
+                isSimulated:   testnet,
                 client:        &http.Client{Timeout: 30 * time.Second},
                 cacheDuration: 15 * time.Second, // 遵循现有缓存策略
                 rateLimiter:   NewRateLimiter(OKXRateLimitRequestsPerSecond, OKXRateLimitBurst),
@@ -1109,6 +1111,13 @@ func (t *OKXTrader) makeRequest(method, endpoint string, params map[string]strin
         req.Header.Set("OK-ACCESS-PASSPHRASE", t.passphrase)
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Accept", "application/json")
+
+        // 设置模拟交易头
+        if t.isSimulated {
+                req.Header.Set("x-simulated-trading", "1")
+        } else {
+                req.Header.Set("x-simulated-trading", "0")
+        }
 
         // 发送请求
         resp, err := t.client.Do(req)

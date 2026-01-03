@@ -295,6 +295,10 @@ export const translations = {
     exchangeConfigWarning1: '• API keys will be encrypted, recommend using read-only or futures trading permissions',
     exchangeConfigWarning2: '• Do not grant withdrawal permissions to ensure fund security',
     exchangeConfigWarning3: '• After deleting configuration, related traders will not be able to trade',
+    tradingMode: 'Trading Mode',
+    realTrading: 'Real Trading',
+    simulatedTrading: 'Simulated Trading',
+    simulatedTradingHint: 'Note: OKX simulated trading requires specific "Simulated API Keys" and will automatically include the simulated trading flag in requests.',
     edit: 'Edit',
 
     // Error Messages
@@ -784,6 +788,10 @@ export const translations = {
     exchangeConfigWarning1: '• API密钥将被加密存储，建议使用只读或期货交易权限',
     exchangeConfigWarning2: '• 不要授予提现权限，确保资金安全',
     exchangeConfigWarning3: '• 删除配置后，相关交易员将无法正常交易',
+    tradingMode: '交易模式',
+    realTrading: '实盘交易',
+    simulatedTrading: '模拟盘交易',
+    simulatedTradingHint: '提示：OKX模拟盘需要使用特定的“模拟盘API Key”，且在请求中会自动携带模拟盘标识。',
     edit: '编辑',
 
     // Error Messages

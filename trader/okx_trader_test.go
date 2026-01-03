@@ -11,10 +11,11 @@ import (
 func TestOKXTraderBasic(t *testing.T) {
 	// Test creating a new OKX trader
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	if trader == nil {
@@ -33,10 +34,11 @@ func TestOKXTraderBasic(t *testing.T) {
 // TestOKXRequestSigning tests request signature generation
 func TestOKXRequestSigning(t *testing.T) {
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	ts := "1640995200"
@@ -439,10 +441,11 @@ func isNetworkErrorString(errStr string) bool {
 func TestOKXComprehensiveIntegration(t *testing.T) {
 	// Test complete flow
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	// Test that trader is properly initialized
@@ -527,10 +530,11 @@ func TestOKXEdgeCases(t *testing.T) {
 func TestOKXPerformance(t *testing.T) {
 	// Test signature generation performance
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	start := time.Now()
@@ -557,9 +561,10 @@ func TestOKXMemoryUsage(t *testing.T) {
 	traders := make([]*OKXTrader, 10)
 	for i := 0; i < 10; i++ {
 		traders[i] = &OKXTrader{
-			apiKey:     "test-api-key",
-			secretKey:  "test-secret-key",
-			passphrase: "test-passphrase",
+			apiKey:      "test-api-key",
+			secretKey:   "test-secret-key",
+			passphrase:  "test-passphrase",
+			isSimulated: false,
 			// Removed testnet field as it doesn't exist in OKXTrader struct
 			baseURL: "https://www.okx.com",
 		}
@@ -578,10 +583,11 @@ func TestOKXMemoryUsage(t *testing.T) {
 // TestOKXThreadSafety tests thread safety
 func TestOKXThreadSafety(t *testing.T) {
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	// Test concurrent signature generation
@@ -644,10 +650,11 @@ func TestOKXErrorPropagation(t *testing.T) {
 func TestOKXDataIntegrity(t *testing.T) {
 	// Test that sensitive data is not exposed
 	trader := &OKXTrader{
-		apiKey:     "1234567890abcdef",
-		secretKey:  "abcdef1234567890",
-		passphrase: "mysecretpassphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "1234567890abcdef",
+		secretKey:   "abcdef1234567890",
+		passphrase:  "mysecretpassphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	// Test API key sanitization
@@ -674,10 +681,11 @@ func TestOKXCompatibility(t *testing.T) {
 
 	// Test that all required methods exist
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	// Test method signatures (compile-time check)
@@ -902,10 +910,11 @@ func TestOKXFinalMessage(t *testing.T) {
 func TestOKXFinalEndToEnd(t *testing.T) {
 	// Complete end-to-end test
 	trader := &OKXTrader{
-		apiKey:     "test-api-key",
-		secretKey:  "test-secret-key",
-		passphrase: "test-passphrase",
-		baseURL:    "https://www.okx.com",
+		apiKey:      "test-api-key",
+		secretKey:   "test-secret-key",
+		passphrase:  "test-passphrase",
+		baseURL:     "https://www.okx.com",
+		isSimulated: false,
 	}
 
 	// Test the complete flow

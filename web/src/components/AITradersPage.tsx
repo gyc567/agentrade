@@ -1493,20 +1493,40 @@ function ExchangeConfigModal({
                 </>
               )}
 
+              {/* 交易模式选择 (实盘/模拟盘) */}
               <div>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={testnet}
-                    onChange={(e) => setTestnet(e.target.checked)}
-                    className="form-checkbox rounded"
-                    style={{ accentColor: '#F0B90B' }}
-                  />
-                  <span style={{ color: '#EAECEF' }}>{t('useTestnet', language)}</span>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#EAECEF' }}>
+                  {t('tradingMode', language)}
                 </label>
-                <div className="text-xs mt-1" style={{ color: '#848E9C' }}>
-                  {t('testnetDescription', language)}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTestnet(false)}
+                    className={`flex-1 py-2 rounded text-sm transition-all ${
+                      !testnet 
+                        ? 'bg-[#F0B90B] text-black font-bold' 
+                        : 'bg-[#0B0E11] text-[#848E9C] border border-[#2B3139]'
+                    }`}
+                  >
+                    {t('realTrading', language)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTestnet(true)}
+                    className={`flex-1 py-2 rounded text-sm transition-all ${
+                      testnet 
+                        ? 'bg-[#F0B90B] text-black font-bold' 
+                        : 'bg-[#0B0E11] text-[#848E9C] border border-[#2B3139]'
+                    }`}
+                  >
+                    {t('simulatedTrading', language)}
+                  </button>
                 </div>
+                {selectedExchange?.id === 'okx' && testnet && (
+                  <div className="text-xs mt-2 p-2 rounded bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-20" style={{ color: '#5DADE2' }}>
+                    {t('simulatedTradingHint', language)}
+                  </div>
+                )}
               </div>
 
               <div className="p-4 rounded" style={{ background: 'rgba(240, 185, 11, 0.1)', border: '1px solid rgba(240, 185, 11, 0.2)' }}>
