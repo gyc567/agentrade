@@ -214,6 +214,12 @@ func (tm *TraderManager) addTraderFromDB(traderCfg *config.TraderRecord, aiModel
                 log.Printf("✓ 交易员 %s 启用 COIN POOL 信号源: %s", traderCfg.Name, coinPoolURL)
         }
 
+        var effectiveOITopURL string
+        if traderCfg.UseOITop && oiTopURL != "" {
+                effectiveOITopURL = oiTopURL
+                log.Printf("✓ 交易员 %s 启用 OI TOP 信号源: %s", traderCfg.Name, oiTopURL)
+        }
+
         // 构建AutoTraderConfig
         traderConfig := trader.AutoTraderConfig{
                 ID:                    traderCfg.ID,
@@ -226,6 +232,7 @@ func (tm *TraderManager) addTraderFromDB(traderCfg *config.TraderRecord, aiModel
                 HyperliquidPrivateKey: "",
                 HyperliquidTestnet:    exchangeCfg.Testnet,
                 CoinPoolAPIURL:        effectiveCoinPoolURL,
+                OITopAPIURL:           effectiveOITopURL,
                 UseQwen:               aiModelCfg.Provider == "qwen",
                 DeepSeekKey:           "",
                 QwenKey:               "",
@@ -332,6 +339,12 @@ func (tm *TraderManager) AddTraderFromDB(traderCfg *config.TraderRecord, aiModel
                 log.Printf("✓ 交易员 %s 启用 COIN POOL 信号源: %s", traderCfg.Name, coinPoolURL)
         }
 
+        var effectiveOITopURL string
+        if traderCfg.UseOITop && oiTopURL != "" {
+                effectiveOITopURL = oiTopURL
+                log.Printf("✓ 交易员 %s 启用 OI TOP 信号源: %s", traderCfg.Name, oiTopURL)
+        }
+
         // 构建AutoTraderConfig
         traderConfig := trader.AutoTraderConfig{
                 ID:                    traderCfg.ID,
@@ -344,6 +357,7 @@ func (tm *TraderManager) AddTraderFromDB(traderCfg *config.TraderRecord, aiModel
                 HyperliquidPrivateKey: "",
                 HyperliquidTestnet:    exchangeCfg.Testnet,
                 CoinPoolAPIURL:        effectiveCoinPoolURL,
+                OITopAPIURL:           effectiveOITopURL,
                 UseQwen:               aiModelCfg.Provider == "qwen",
                 DeepSeekKey:           "",
                 QwenKey:               "",
@@ -902,6 +916,12 @@ func (tm *TraderManager) loadSingleTrader(traderCfg *config.TraderRecord, aiMode
                 log.Printf("✓ 交易员 %s 启用 COIN POOL 信号源: %s", traderCfg.Name, coinPoolURL)
         }
 
+        var effectiveOITopURL string
+        if traderCfg.UseOITop && oiTopURL != "" {
+                effectiveOITopURL = oiTopURL
+                log.Printf("✓ 交易员 %s 启用 OI TOP 信号源: %s", traderCfg.Name, oiTopURL)
+        }
+
         // 🔧 修复：处理可能为nil的configs
         // 构建AutoTraderConfig
         var aiModel string
@@ -940,6 +960,7 @@ func (tm *TraderManager) loadSingleTrader(traderCfg *config.TraderRecord, aiMode
                 AltcoinLeverage:      traderCfg.AltcoinLeverage,
                 ScanInterval:         time.Duration(traderCfg.ScanIntervalMinutes) * time.Minute,
                 CoinPoolAPIURL:       effectiveCoinPoolURL,
+                OITopAPIURL:          effectiveOITopURL,
                 CustomAPIURL:         customAPIURL,    // 自定义API URL
                 CustomModelName:      customModelName, // 自定义模型名称
                 UseQwen:              useQwen,

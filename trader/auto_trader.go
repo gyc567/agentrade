@@ -50,6 +50,7 @@ type AutoTraderConfig struct {
         OKXTestnet    bool   // OKX是否使用测试网络
 
         CoinPoolAPIURL string
+        OITopAPIURL    string
 
         // AI配置
         UseQwen     bool
@@ -103,6 +104,7 @@ type AutoTrader struct {
         decisionLogger        *logger.DecisionLogger     // 决策日志记录器
         kellyManager          *decision.KellyStopManager // 凯利公式止盈止损管理器
         symbolConfigManager   *decision.SymbolConfigManager // 币种特定参数管理器
+        signalProvider        *pool.SignalProvider       // 信号源提供者
         creditService         credits.Service            // 积分服务
         db                    *config.Database           // 数据库引用
         initialBalance        float64
@@ -139,6 +141,12 @@ func NewAutoTrader(config AutoTraderConfig) (*AutoTrader, error) {
 
         mcpClient := mcp.New()
 
+        // 初始化信号源提供者
+        signalProvider := pool.NewSignalProvider(pool.SignalProviderConfig{
+                CoinPoolAPIURL: config.CoinPoolAPIURL,
+                OITopAPIURL:    config.OITopAPIURL,
+        })
+
         // 初始化AI
         if config.AIModel == "custom" {
                 // 使用自定义API
@@ -160,11 +168,6 @@ func NewAutoTrader(config AutoTraderConfig) (*AutoTrader, error) {
                 } else {
                         log.Printf("🤖 [%s] 使用DeepSeek AI", config.Name)
                 }
-        }
-
-        // 初始化币种池API
-        if config.CoinPoolAPIURL != "" {
-                pool.SetCoinPoolAPI(config.CoinPoolAPIURL)
         }
 
         // 设置默认交易平台
@@ -259,9 +262,10 @@ func NewAutoTrader(config AutoTraderConfig) (*AutoTrader, error) {
                 trader:                trader,
                 mcpClient:             mcpClient,
                 decisionLogger:        decisionLogger,
-                kellyManager:          kellyManager,
-                symbolConfigManager:   symbolConfigManager,
-                creditService:         creditService,
+                                kellyManager:         kellyManager,
+                                symbolConfigManager:   symbolConfigManager,
+                                signalProvider:        signalProvider,
+                                creditService:         creditService,
                 db:                    config.Database,
                 initialBalance:        config.InitialBalance,
                 systemPromptTemplate:  systemPromptTemplate,
@@ -733,7 +737,22 @@ func (at *AutoTrader) buildTradingContext() (*decision.Context, error) {
                 mlionAPIKey, _ = at.db.GetSystemConfig("mlion_api_key")
         }
 
-        // 7. 构建上下文
+        // 7. 获取OI Top数据（用于AI决策参考）
+        oiTopDataMap := make(map[string]*decision.OITopData)
+        if oiPositions, err := at.signalProvider.GetOITopPositions(); err == nil {
+                for _, pos := range oiPositions {
+                        oiTopDataMap[pos.Symbol] = &decision.OITopData{
+                                Rank:              pos.Rank,
+                                OIDeltaPercent:    pos.OIDeltaPercent,
+                                OIDeltaValue:      pos.OIDeltaValue,
+                                PriceDeltaPercent: pos.PriceDeltaPercent,
+                                NetLong:           pos.NetLong,
+                                NetShort:          pos.NetShort,
+                        }
+                }
+        }
+
+        // 8. 构建上下文
         ctx := &decision.Context{
                 CurrentTime:     time.Now().Format("2006-01-02 15:04:05"),
                 RuntimeMinutes:  int(time.Since(at.startTime).Minutes()),
@@ -751,6 +770,7 @@ func (at *AutoTrader) buildTradingContext() (*decision.Context, error) {
                 },
                 Positions:       positionInfos,
                 CandidateCoins:  candidateCoins,
+                OITopDataMap:    oiTopDataMap, // 注入OI Top数据
                 Performance:     performance, // 添加历史表现分析
                 LastCloseTime:   at.positionFirstSeenTime, // 平仓记录，用于冷却期检查
                 CooldownMinutes: 15, // 默认15分钟冷却期
@@ -1423,7 +1443,7 @@ func (at *AutoTrader) getCandidateCoins() ([]decision.CandidateCoin, error) {
                         // 如果数据库中没有配置默认币种，则使用AI500+OI Top作为fallback
                         const ai500Limit = 20 // AI500取前20个评分最高的币种
 
-                        mergedPool, err := pool.GetMergedCoinPool(ai500Limit)
+                        mergedPool, err := at.signalProvider.GetMergedCoinPool(ai500Limit)
                         if err != nil {
                                 return nil, fmt.Errorf("获取合并币种池失败: %w", err)
                         }
