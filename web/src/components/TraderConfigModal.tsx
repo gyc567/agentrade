@@ -147,8 +147,8 @@ export function TraderConfigModal({
         override_base_prompt: false,
         system_prompt_template: 'default',
         is_cross_margin: true,
-        use_coin_pool: false,
-        use_oi_top: false,
+        use_coin_pool: true,
+        use_oi_top: true,
         initial_balance: 1000,
         scan_interval_minutes: 3,
       });
@@ -467,56 +467,6 @@ export function TraderConfigModal({
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Signal Sources */}
-          <div className="bg-[#0B0E11] border border-[#2B3139] rounded-lg p-5">
-            <h3 className="text-lg font-semibold text-[#EAECEF] mb-5 flex items-center gap-2">
-              📡 信号源配置
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div 
-                className={`p-4 rounded-lg border transition-all cursor-pointer flex items-start gap-3 ${
-                  formData.use_coin_pool 
-                    ? 'bg-[#F0B90B] bg-opacity-10 border-[#F0B90B]' 
-                    : 'bg-[#1E2329] border-[#2B3139] hover:border-[#F0B90B] hover:bg-opacity-5'
-                }`}
-                onClick={() => handleInputChange('use_coin_pool', !formData.use_coin_pool)}
-              >
-                <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                  formData.use_coin_pool ? 'bg-[#F0B90B] border-[#F0B90B]' : 'border-[#848E9C]'
-                }`}>
-                  {formData.use_coin_pool && <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-black" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-[#EAECEF]">使用 AI500 Coin Pool</div>
-                  <p className="text-xs text-[#848E9C] mt-1">自动跟踪 AI500 评分最高的优质币种</p>
-                </div>
-              </div>
-
-              <div 
-                className={`p-4 rounded-lg border transition-all cursor-pointer flex items-start gap-3 ${
-                  formData.use_oi_top 
-                    ? 'bg-[#F0B90B] bg-opacity-10 border-[#F0B90B]' 
-                    : 'bg-[#1E2329] border-[#2B3139] hover:border-[#F0B90B] hover:bg-opacity-5'
-                }`}
-                onClick={() => handleInputChange('use_oi_top', !formData.use_oi_top)}
-              >
-                <div className={`mt-1 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                  formData.use_oi_top ? 'bg-[#F0B90B] border-[#F0B90B]' : 'border-[#848E9C]'
-                }`}>
-                  {formData.use_oi_top && <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-black" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-[#EAECEF]">使用 OI Top 信号</div>
-                  <p className="text-xs text-[#848E9C] mt-1">捕捉全网持仓量增长最快的爆发性币种</p>
-                </div>
-              </div>
-            </div>
-            <p className="text-xs text-[#848E9C] mt-4 flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-              信号源 URL 可在“个人设置”中全局配置。未配置时将使用系统默认源。
-            </p>
           </div>
 
           {/* Trading Prompt */}

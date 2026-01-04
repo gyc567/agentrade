@@ -339,20 +339,15 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
               {/* Only show original navigation items on home page */}
               {isHomePage && [
                 { key: 'features', label: t('features', language) },
-                { key: 'howItWorks', label: t('howItWorks', language) },
-                { key: 'community', label: t('community', language) }
+                { key: 'howItWorks', label: t('howItWorks', language) }
               ].map((item) => (
                 <a
                   key={item.key}
                   href={
-                    item.key === 'community'
-                      ? 'https://t.me/monnaire_capital_research'
-                      : item.key === 'features'
+                    item.key === 'features'
                       ? '#features'
                       : `/user-manual/${language}`
                   }
-                  target={item.key === 'community' ? '_blank' : undefined}
-                  rel={item.key === 'community' ? 'noopener noreferrer' : undefined}
                   className='text-sm transition-colors relative group'
                   style={{ color: 'var(--brand-light-gray)' }}
                 >
@@ -680,20 +675,15 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
           {/* Original Navigation Items - Only on home page */}
           {isHomePage && [
             { key: 'features', label: t('features', language) },
-            { key: 'howItWorks', label: t('howItWorks', language) },
-            { key: 'community', label: t('community', language) }
+            { key: 'howItWorks', label: t('howItWorks', language) }
           ].map((item) => (
             <a
               key={item.key}
               href={
-                item.key === 'community'
-                  ? 'https://t.me/monnaire_capital_research'
-                  : item.key === 'features'
+                item.key === 'features'
                   ? '#features'
                   : `/user-manual/${language}`
               }
-              target={item.key === 'community' ? '_blank' : undefined}
-              rel={item.key === 'community' ? 'noopener noreferrer' : undefined}
               className='block text-sm py-2'
               style={{ color: 'var(--brand-light-gray)' }}
             >

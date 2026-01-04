@@ -1,11 +1,13 @@
 import { motion, useScroll, useTransform, useAnimation } from 'framer-motion'
+import { ArrowRight, Trophy } from 'lucide-react'
 import { t, Language } from '../../i18n/translations'
 
 interface HeroSectionProps {
   language: Language
+  onGetStartedClick?: () => void
 }
 
-export default function HeroSection({ language }: HeroSectionProps) {
+export default function HeroSection({ language, onGetStartedClick }: HeroSectionProps) {
   const { scrollYProgress } = useScroll()
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8])
@@ -23,7 +25,7 @@ export default function HeroSection({ language }: HeroSectionProps) {
       <div className='max-w-7xl mx-auto'>
         <div className='grid lg:grid-cols-2 gap-12 items-center'>
           {/* Left Content */}
-          <motion.div className='space-y-6 relative z-10' style={{ opacity, scale }} initial='initial' animate='animate' variants={staggerContainer}>
+          <motion.div className='space-y-8 relative z-10' style={{ opacity, scale }} initial='initial' animate='animate' variants={staggerContainer}>
 
             <h1 className='text-5xl lg:text-7xl font-bold leading-tight' style={{ color: 'var(--brand-light-gray)' }}>
               {t('heroTitle1', language)}
@@ -34,6 +36,32 @@ export default function HeroSection({ language }: HeroSectionProps) {
             <motion.p className='text-xl leading-relaxed' style={{ color: 'var(--text-secondary)' }} variants={fadeInUp}>
               {t('heroDescription', language)}
             </motion.p>
+
+            <motion.div className='flex flex-wrap gap-4 pt-4' variants={fadeInUp}>
+              <motion.button 
+                onClick={onGetStartedClick}
+                className='flex items-center gap-2 px-8 py-4 rounded-lg font-semibold text-lg' 
+                style={{ background: 'var(--brand-yellow)', color: 'var(--brand-black)' }} 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+              >
+                {t('getStartedNow', language)}
+                <motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
+                  <ArrowRight className='w-5 h-5' />
+                </motion.div>
+              </motion.button>
+              
+              <motion.a 
+                href='/competition' 
+                className='flex items-center gap-2 px-8 py-4 rounded-lg font-semibold text-lg' 
+                style={{ background: 'transparent', color: 'var(--brand-light-gray)', border: '2px solid var(--brand-yellow)' }} 
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(240, 185, 11, 0.1)' }} 
+                whileTap={{ scale: 0.95 }}
+              >
+                <Trophy className='w-5 h-5' />
+                {t('exploreCompetition', language)}
+              </motion.a>
+            </motion.div>
           </motion.div>
 
           {/* Right Visual - Interactive Robot */}

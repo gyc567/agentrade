@@ -22,7 +22,7 @@ export default function FooterSection({ language }: FooterSectionProps) {
         </div>
 
         {/* Multi-link columns */}
-        <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-8'>
+        <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 gap-8'>
           <div>
             <h3
               className='text-sm font-semibold mb-3'
@@ -34,72 +34,11 @@ export default function FooterSection({ language }: FooterSectionProps) {
               <li>
                 <a
                   className='hover:text-[#F0B90B]'
-                  href='https://github.com/gyc567/nofx'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                >
-                  GitHub
-                </a>
-              </li>
-              <li>
-                <a
-                  className='hover:text-[#F0B90B]'
-                  href='https://t.me/nofx_dev_community'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                >
-                  Telegram
-                </a>
-              </li>
-              <li>
-                <a
-                  className='hover:text-[#F0B90B]'
                   href='https://x.com/AgenTrade'
                   target='_blank'
                   rel='noopener noreferrer'
                 >
                   X (Twitter)
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3
-              className='text-sm font-semibold mb-3'
-              style={{ color: '#EAECEF' }}
-            >
-              {t('resources', language)}
-            </h3>
-            <ul className='space-y-2 text-sm' style={{ color: '#848E9C' }}>
-              <li>
-                <a
-                  className='hover:text-[#F0B90B]'
-                  href='https://github.com/gyc567/nofx/blob/main/README.md'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                >
-                  {t('documentation', language)}
-                </a>
-              </li>
-              <li>
-                <a
-                  className='hover:text-[#F0B90B]'
-                  href='https://github.com/gyc567/nofx/issues'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                >
-                  Issues
-                </a>
-              </li>
-              <li>
-                <a
-                  className='hover:text-[#F0B90B]'
-                  href='https://github.com/gyc567/nofx/pulls'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                >
-                  Pull Requests
                 </a>
               </li>
             </ul>
