@@ -1,4 +1,4 @@
-# 🤖 NOFX - Agentic Trading OS
+# 🤖 agentrade - Agentic Trading OS
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react)](https://reactjs.org/)
@@ -8,7 +8,7 @@
 
 **Languages:** [English](README.md) | [中文](docs/i18n/zh-CN/README.md) | [Українська](docs/i18n/uk/README.md) | [Русский](docs/i18n/ru/README.md)
 
-**Official Twitter:** [@nofx_ai](https://x.com/nofx_ai)
+**Official Twitter:** [@agentrade_ai](https://x.com/agentrade_ai)
 
 **📚 Documentation:** [Docs Home](docs/README.md) | [Getting Started](docs/getting-started/README.md) | [Changelog](CHANGELOG.md) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
 
@@ -58,7 +58,7 @@ When deploying to Replit:
 
 ## 🚀 Universal AI Trading Operating System
 
-**NOFX** is a **universal Agentic Trading OS** built on a unified architecture. We've successfully closed the loop in crypto markets: **"Multi-Agent Decision → Unified Risk Control → Low-Latency Execution → Live/Paper Account Backtesting"**, and are now expanding this same technology stack to **stocks, futures, options, forex, and all financial markets**.
+**agentrade** is a **universal Agentic Trading OS** built on a unified architecture. We've successfully closed the loop in crypto markets: **"Multi-Agent Decision → Unified Risk Control → Low-Latency Execution → Live/Paper Account Backtesting"**, and are now expanding this same technology stack to **stocks, futures, options, forex, and all financial markets**.
 
 ### 🎯 Core Features
 
@@ -97,7 +97,7 @@ Join our Telegram developer community to discuss, share ideas, and get support:
 
 ### 🚀 Multi-Exchange Support!
 
-NOFX now supports **three major exchanges**: Binance, Hyperliquid, and Aster DEX!
+agentrade now supports **three major exchanges**: Binance, Hyperliquid, and Aster DEX!
 
 #### **Hyperliquid Exchange**
 
@@ -165,7 +165,7 @@ A Binance-compatible decentralized perpetual futures exchange!
 
 ## ✨ Current Implementation - Crypto Markets
 
-NOFX is currently **fully operational in cryptocurrency markets** with the following proven capabilities:
+agentrade is currently **fully operational in cryptocurrency markets** with the following proven capabilities:
 
 ### 🏆 Multi-Agent Competition Framework
 - **Live Agent Battle**: Qwen vs DeepSeek models compete in real-time trading
@@ -213,7 +213,7 @@ NOFX is currently **fully operational in cryptocurrency markets** with the follo
 
 ## 🔮 Roadmap - Universal Market Expansion
 
-NOFX is on a mission to become the **Universal AI Trading Operating System** for all financial markets.
+agentrade is on a mission to become the **Universal AI Trading Operating System** for all financial markets.
 
 **Vision:** Same architecture. Same agent framework. All markets.
 
@@ -238,7 +238,7 @@ NOFX is on a mission to become the **Universal AI Trading Operating System** for
 
 ## 🏗️ Technical Architecture
 
-NOFX is built with a modern, modular architecture:
+agentrade is built with a modern, modular architecture:
 
 - **Backend:** Go with Gin framework, SQLite database
 - **Frontend:** React 18 + TypeScript + Vite + TailwindCSS
@@ -375,8 +375,8 @@ sudo apt-get install libta-lib0-dev
 ### 2. Clone the Project
 
 ```bash
-git clone https://github.com/gyc567/nofx.git
-cd nofx
+git clone https://github.com/gyc567/agentrade.git
+cd agentrade
 ```
 
 ### 3. Install Dependencies
@@ -443,10 +443,10 @@ Before configuring the system, you need to obtain AI API keys. Choose one of the
 
 ```bash
 # Build the program (first time only, or after code changes)
-go build -o nofx
+go build -o agentrade
 
 # Start the backend
-./nofx
+./agentrade
 ```
 
 **What you should see:**
@@ -509,7 +509,7 @@ Open your browser and visit: **🌐 http://localhost:3000**
 
 #### 🔷 Alternative: Using Hyperliquid Exchange
 
-**NOFX also supports Hyperliquid** - a decentralized perpetual futures exchange. To use Hyperliquid instead of Binance:
+**agentrade also supports Hyperliquid** - a decentralized perpetual futures exchange. To use Hyperliquid instead of Binance:
 
 **Step 1**: Get your Ethereum private key (for Hyperliquid authentication)
 
@@ -553,7 +553,7 @@ Open your browser and visit: **🌐 http://localhost:3000**
 
 #### 🔶 Alternative: Using Aster DEX Exchange
 
-**NOFX also supports Aster DEX** - a Binance-compatible decentralized perpetual futures exchange!
+**agentrade also supports Aster DEX** - a Binance-compatible decentralized perpetual futures exchange!
 
 **Why Choose Aster?**
 - 🎯 Binance-compatible API (easy migration)
@@ -810,10 +810,10 @@ Open a terminal and run:
 
 ```bash
 # Build the program (first time only, or after code changes)
-go build -o nofx
+go build -o agentrade
 
 # Start the backend
-./nofx
+./agentrade
 ```
 
 **What you should see:**
@@ -1284,8 +1284,8 @@ We welcome contributions from the community! See our comprehensive guides:
 
 
 ### 🐛 Technical Support
-- **GitHub Issues**: [Submit an Issue](https://github.com/gyc567/nofx/issues)
-- **Developer Community**: [Telegram Group](https://t.me/nofx_dev_community)
+- **GitHub Issues**: [Submit an Issue](https://github.com/gyc567/agentrade/issues)
+- **Developer Community**: [Telegram Group](https://t.me/agentrade_dev_community)
 
 ---
 
@@ -1307,4 +1307,4 @@ We welcome contributions from the community! See our comprehensive guides:
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tinkle-community/nofx&type=Date)](https://star-history.com/#tinkle-community/nofx&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=tinkle-community/agentrade&type=Date)](https://star-history.com/#tinkle-community/agentrade&Date)
