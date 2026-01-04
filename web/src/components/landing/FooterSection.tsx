@@ -34,7 +34,7 @@ export default function FooterSection({ language }: FooterSectionProps) {
               <li>
                 <a
                   className='hover:text-[#F0B90B]'
-                  href='https://x.com/AgenTrade'
+                  href='https://x.com/EricBlock2100'
                   target='_blank'
                   rel='noopener noreferrer'
                 >

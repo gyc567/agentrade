@@ -52,7 +52,7 @@ export default function CommunitySection() {
     },
     {
       quote:
-      '跑了一晚上 @AgenTrade 开源的 AI 自动交易，太有意思了，就看 AI 在那一会开空一会开多，一顿操作，虽然看不懂为什么，但是一晚上帮我赚了 6% 收益',
+      '跑了一晚上 @EricBlock2100 开源的 AI 自动交易，太有意思了，就看 AI 在那一会开空一会开多，一顿操作，虽然看不懂为什么，但是一晚上帮我赚了 6% 收益',
       authorName: 'DIŸgöd',
       handle: '@DIYgod',
       avatarUrl:
