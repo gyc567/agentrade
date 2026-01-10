@@ -3,8 +3,8 @@ export type Language = 'en' | 'zh';
 export const translations = {
   en: {
     // Header
-    appTitle: 'Agent Trade',
-    subtitle: 'Multi-AI Model Trading Platform',
+    appTitle: 'PumpStrategy',
+    subtitle: 'AI Trading Strategy Platform',
     aiTraders: 'AI Traders',
     details: 'Details',
     tradingPanel: 'Trading Panel',
@@ -61,7 +61,7 @@ export const translations = {
     creditDataLoadFailed: 'Failed to load credit data',
 
     // Footer
-    footerTitle: 'Agent Trade - AI Trading System',
+    footerTitle: 'PumpStrategy - AI Trading Strategy Platform',
     footerWarning: '⚠️ Trading involves risk. Use at your own discretion.',
 
     // Stats Cards
@@ -382,17 +382,17 @@ export const translations = {
     // Hero Section
     heroTitle1: 'Read the Market.',
     heroTitle2: 'Write the Trade.',
-    heroDescription: 'Agent Trade is the future standard for AI trading — an open, community-driven agentic trading OS. Supporting Binance, Aster DEX and other exchanges, self-hosted, multi-agent competition, let AI automatically make decisions, execute and optimize trades for you.',
+    heroDescription: 'PumpStrategy is the future standard for AI trading — an open, community-driven agentic trading OS. Supporting Binance, Aster DEX and other exchanges, self-hosted, multi-agent competition, let AI automatically make decisions, execute and optimize trades for you.',
     
     // Landing Page CTA
     readyToDefine: 'Ready to define the future of AI trading?',
-    startWithCrypto: 'Starting with crypto markets, expanding to TradFi. Agent Trade is the infrastructure of AgentFi.',
+    startWithCrypto: 'Starting with crypto markets, expanding to TradFi. PumpStrategy is the infrastructure of AgentFi.',
     getStartedNow: 'Get Started Now',
     exploreCompetition: 'Explore Competition',
     
     // Features Section
     coreFeatures: 'Core Features',
-    whyChooseNofx: 'Why Choose Agent Trade?',
+    whyChooseNofx: 'Why Choose PumpStrategy?',
     openCommunityDriven: 'Open source, transparent, community-driven AI trading OS',
     openSourceSelfHosted: '100% Open Source & Self-Hosted',
     openSourceDesc: 'Your framework, your rules. Non-black box, supports custom prompts and multi-models.',
@@ -414,9 +414,9 @@ export const translations = {
     secureFeatures4: 'Trading log auditing',
     
     // About Section
-    aboutNofx: 'About Agent Trade',
-    whatIsNofx: 'What is Agent Trade?',
-    nofxNotAnotherBot: "Agent Trade is not another trading bot, but the 'Linux' of AI trading —",
+    aboutNofx: 'About PumpStrategy',
+    whatIsNofx: 'What is PumpStrategy?',
+    nofxNotAnotherBot: "PumpStrategy is not another trading bot, but the 'Linux' of AI trading —",
     nofxDescription1: 'a transparent, trustworthy open source OS that provides a unified',
     nofxDescription2: "'decision-risk-execution' layer, supporting all asset classes.",
     nofxDescription3: 'Starting with crypto markets (24/7, high volatility perfect testing ground), future expansion to stocks, futures, forex. Core: open architecture, AI',
@@ -429,7 +429,7 @@ export const translations = {
     startupMessages3: 'Web console http://localhost:3000',
     
     // How It Works Section
-    howToStart: 'How to Get Started with Agent Trade',
+    howToStart: 'How to Get Started with PumpStrategy',
     fourSimpleSteps: 'Four simple steps to start your AI automated trading journey',
     step1Title: 'Register & Log In',
     step1Desc: 'Register your account on the platform and log in to start your AI trading journey.',
@@ -440,7 +440,7 @@ export const translations = {
     step4Title: 'Monitor & Manage',
     step4Desc: 'Real-time monitoring of AI trading decisions and performance management.',
     importantRiskWarning: 'Important Risk Warning',
-    riskWarningText: 'Dev branch is unstable, do not use funds you cannot afford to lose. Agent Trade is non-custodial, no official strategies. Trading involves risks, invest carefully.',
+    riskWarningText: 'Dev branch is unstable, do not use funds you cannot afford to lose. PumpStrategy is non-custodial, no official strategies. Trading involves risks, invest carefully.',
     
     // Community Section (testimonials are kept as-is since they are quotes)
     
@@ -453,7 +453,7 @@ export const translations = {
     strategicInvestment: '(Strategic Investment)',
     
     // Login Modal
-    accessNofxPlatform: 'Access Agent Trade Platform',
+    accessNofxPlatform: 'Access PumpStrategy Platform',
     loginRegisterPrompt: 'Please login or register to access the full AI trading platform',
     registerNewAccount: 'Register New Account',
 
@@ -496,8 +496,8 @@ export const translations = {
   },
   zh: {
     // Header
-    appTitle: 'Agent Trade',
-    subtitle: '多AI模型交易平台',
+    appTitle: 'PumpStrategy',
+    subtitle: 'AI交易策略平台',
     aiTraders: 'AI交易员',
     details: '详情',
     tradingPanel: '交易面板',
@@ -521,7 +521,7 @@ export const translations = {
     oneClickTraderCreateFailed: '创建交易员失败，请稍后重试。',
 
     // Footer
-    footerTitle: 'Agent Trade - AI交易系统',
+    footerTitle: 'PumpStrategy - AI交易策略平台',
     footerWarning: '⚠️ 交易有风险，请谨慎使用。',
 
     // User Profile
@@ -875,17 +875,17 @@ export const translations = {
     // Hero Section
     heroTitle1: 'Read the Market.',
     heroTitle2: 'Write the Trade.',
-    heroDescription: 'Agent Trade 是 AI 交易的未来标准——一个开放、社区驱动的代理式交易操作系统。支持 Binance、Aster DEX 等交易所，自托管、多代理竞争，让 AI 为你自动决策、执行和优化交易。',
+    heroDescription: 'PumpStrategy 是 AI 交易的未来标准——一个开放、社区驱动的代理式交易操作系统。支持 Binance、Aster DEX 等交易所，自托管、多代理竞争，让 AI 为你自动决策、执行和优化交易。',
     
     // Landing Page CTA
     readyToDefine: '准备好定义 AI 交易的未来吗？',
-    startWithCrypto: '从加密市场起步，扩展到 TradFi。Agent Trade 是 AgentFi 的基础架构。',
+    startWithCrypto: '从加密市场起步，扩展到 TradFi。PumpStrategy 是 AgentFi 的基础架构。',
     getStartedNow: '立即开始',
     exploreCompetition: '探索实时竞赛',
     
     // Features Section
     coreFeatures: '核心功能',
-    whyChooseNofx: '为什么选择 Agent Trade？',
+    whyChooseNofx: '为什么选择 PumpStrategy？',
     openCommunityDriven: '开源、透明、社区驱动的 AI 交易操作系统',
     openSourceSelfHosted: '100% 开源与自托管',
     openSourceDesc: '你的框架，你的规则。非黑箱，支持自定义提示词和多模型。',
@@ -907,9 +907,9 @@ export const translations = {
     secureFeatures4: '交易日志审计',
     
     // About Section
-    aboutNofx: '关于 Agent Trade',
-    whatIsNofx: '什么是 Agent Trade？',
-    nofxNotAnotherBot: 'Agent Trade 不是另一个交易机器人，而是 AI 交易的 \'Linux\' ——',
+    aboutNofx: '关于 PumpStrategy',
+    whatIsNofx: '什么是 PumpStrategy？',
+    nofxNotAnotherBot: 'PumpStrategy 不是另一个交易机器人，而是 AI 交易的 \'Linux\' ——',
     nofxDescription1: '一个透明、可信任的开源 OS，提供统一的 \'决策-风险-执行\'',
     nofxDescription2: '层，支持所有资产类别。',
     nofxDescription3: '从加密市场起步（24/7、高波动性完美测试场），未来扩展到股票、期货、外汇。核心：开放架构、AI',
@@ -922,7 +922,7 @@ export const translations = {
     startupMessages3: 'Web 控制台 http://localhost:3000',
     
     // How It Works Section
-    howToStart: '如何开始使用 Agent Trade',
+    howToStart: '如何开始使用 PumpStrategy',
     fourSimpleSteps: '四个简单步骤，开启 AI 自动交易之旅',
     step1Title: '注册并登录',
     step1Desc: '在平台上注册您的账号并登录，开始您的 AI 交易之旅。',
@@ -946,7 +946,7 @@ export const translations = {
     strategicInvestment: '(战略投资)',
     
     // Login Modal
-    accessNofxPlatform: '访问 Agent Trade 平台',
+    accessNofxPlatform: '访问 PumpStrategy 平台',
     loginRegisterPrompt: '请选择登录或注册以访问完整的 AI 交易平台',
     registerNewAccount: '注册新账号',
 

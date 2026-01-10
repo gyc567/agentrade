@@ -205,7 +205,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0E11' }}>
         <div className="text-center">
-          <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+          <img src="/icons/PumpStrategy_Logo_Simple.svg" alt="PumpStrategy Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
           <p style={{ color: '#EAECEF' }}>{t('loading', language)}</p>
         </div>
       </div>
@@ -288,7 +288,7 @@ function App() {
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0E11' }}>
           <div className="text-center">
-            <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+            <img src="/icons/PumpStrategy_Logo_Simple.svg" alt="PumpStrategy Logo" className="w-16 h-16 mx-auto mb-4 animate-pulse" />
             <p style={{ color: '#EAECEF' }}>{t('loading', language)}</p>
           </div>
         </div>

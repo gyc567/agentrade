@@ -2,6 +2,9 @@
  * API 配置模块
  * 统一管理所有 API 相关配置
  * 确保前端数据都从后端 API 获取，不直接访问数据库
+ * 
+ * 品牌: PumpStrategy
+ * 域名: pumpstrategy.io
  */
 
 // 默认后端 API 地址（仅当前端部署在独立域名且无VITE_API_URL时使用）
