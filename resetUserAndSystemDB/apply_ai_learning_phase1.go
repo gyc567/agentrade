@@ -1,3 +1,6 @@
+//go:build ailearning
+// +build ailearning
+
 package main
 
 import (

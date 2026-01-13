@@ -107,10 +107,7 @@ func setupPaymentTestDB(t *testing.T) *Database {
 
 	// 包装为Database对象
 	database := &Database{
-		neonDB:    db,
-		sqliteDB:  db,
-		currentDB: db,
-		usingNeon: false,
+		db: db,
 	}
 
 	return database

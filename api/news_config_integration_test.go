@@ -30,9 +30,16 @@ func SetupIntegrationTest(t *testing.T) *IntegrationTestHelper {
 	mockRepo := NewMockNewsConfigRepository()
 	handler := NewNewsConfigHandler(mockRepo)
 
-	// 注册路由
+	// 手动注册路由（NewsConfigHandler 没有 RegisterRoutes 方法）
 	apiGroup := router.Group("/api")
-	handler.RegisterRoutes(apiGroup)
+	userGroup := apiGroup.Group("/user")
+	{
+		userGroup.GET("/news-config", handler.GetUserNewsConfig)
+		userGroup.POST("/news-config", handler.CreateOrUpdateUserNewsConfig)
+		userGroup.PUT("/news-config", handler.UpdateUserNewsConfig)
+		userGroup.DELETE("/news-config", handler.DeleteUserNewsConfig)
+		userGroup.GET("/news-config/sources", handler.GetEnabledNewsSources)
+	}
 
 	return &IntegrationTestHelper{
 		router: router,

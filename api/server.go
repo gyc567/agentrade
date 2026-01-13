@@ -148,12 +148,15 @@ func corsMiddleware() gin.HandlerFunc {
                 "https://web-fco5upt1e-gyc567s-projects.vercel.app",
                 "https://web-2ybunmaej-gyc567s-projects.vercel.app",
                 "https://web-ge79k4nzy-gyc567s-projects.vercel.app",
-                // 生产前端域名（含www和不含www）
-                "https://www.agentrade.xyz",
-                "https://agentrade.xyz",
+			// 生产前端域名（含www和不含www）
+			"https://www.agentrade.xyz",
+			"https://agentrade.xyz",
+			// PumpStrategy 新域名
+			"https://pumpstrategy.io",
+			"https://www.pumpstrategy.io",
 
-                // Replit部署域名
-                "https://nofx-gyc567.replit.app",
+			// Replit部署域名
+			"https://nofx-gyc567.replit.app",
         }
 
         // 如果设置了环境变量，使用环境变量中的值

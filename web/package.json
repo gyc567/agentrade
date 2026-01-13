@@ -1,5 +1,5 @@
 {
-  "name": "nofx-web",
+  "name": "pumpstrategy-web",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@crossmint/client-sdk-react-ui": "^2.6.13",
+    "@crossmint/client-sdk-react-ui": "^1.15.2",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -49,7 +49,7 @@
     "vitest": "^4.0.15",
     "vitest-dom": "^0.1.1"
   },
-  "description": "基于 Vite + React + TypeScript 的AI自动交易监控面板",
+  "description": "PumpStrategy - AI Trading Strategy Platform based on Vite + React + TypeScript",
   "main": "index.js",
   "keywords": [],
   "author": "",

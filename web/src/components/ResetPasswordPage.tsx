@@ -93,7 +93,7 @@ export function ResetPasswordPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <img src="/icons/Monnaire_Logo.svg" alt="Monnaire Logo" className="w-16 h-16 object-contain" />
+              <img src="/icons/PumpStrategy_Logo_Simple.svg" alt="PumpStrategy Logo" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--brand-light-gray)' }}>
               {step === 'request' ? '重置密码' : '确认重置'}

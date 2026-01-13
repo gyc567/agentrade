@@ -145,12 +145,12 @@ export default function HeaderBar({ isLoggedIn = false, isHomePage = false, curr
         <div className='flex items-center justify-between h-16'>
           {/* Logo */}
           <a href='/' className='flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer'>
-            <img src='/icons/Monnaire_Logo.svg' alt='Agent Trade Logo' className='w-8 h-8' />
+            <img src='/icons/PumpStrategy_Logo_Simple.svg' alt='PumpStrategy Logo' className='w-8 h-8' />
             <span className='text-xl font-bold' style={{ color: 'var(--brand-yellow)' }}>
-              Agent Trade
+              PumpStrategy
             </span>
             <span className='text-sm hidden sm:block' style={{ color: 'var(--text-secondary)' }}>
-              Agentic Trading OS
+              AI Trading Strategy
             </span>
           </a>
 

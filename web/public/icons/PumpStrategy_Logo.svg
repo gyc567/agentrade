@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <!-- 渐变定义 - 金色到橙色，体现交易增长 -->
+    <linearGradient id="pumpGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F0B90B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FCD535;stop-opacity:1" />
+    </linearGradient>
+    <!-- 辉光效果 -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景圆形 - 深色背景 -->
+  <circle cx="100" cy="100" r="95" fill="#0B0E11" stroke="url(#pumpGradient)" stroke-width="2"/>
+  
+  <!-- 上升箭头 - 代表 Pump/增长策略 -->
+  <g filter="url(#glow)">
+    <!-- 主箭头 - 向上的趋势 -->
+    <path d="M100 35 L140 85 L120 85 L120 145 L80 145 L80 85 L60 85 Z" 
+          fill="url(#pumpGradient)" 
+          opacity="0.95"/>
+    
+    <!-- AI 神经网络节点 - 代表智能策略 -->
+    <circle cx="100" cy="100" r="8" fill="#0B0E11" stroke="#FCD535" stroke-width="2"/>
+    <circle cx="75" cy="120" r="5" fill="#F0B90B" opacity="0.8"/>
+    <circle cx="125" cy="120" r="5" fill="#F0B90B" opacity="0.8"/>
+    <circle cx="100" cy="135" r="5" fill="#F0B90B" opacity="0.8"/>
+    
+    <!-- 连接线 - 神经网络连接 -->
+    <line x1="100" y1="100" x2="75" y2="120" stroke="#FCD535" stroke-width="1.5" opacity="0.6"/>
+    <line x1="100" y1="100" x2="125" y2="120" stroke="#FCD535" stroke-width="1.5" opacity="0.6"/>
+    <line x1="100" y1="100" x2="100" y2="135" stroke="#FCD535" stroke-width="1.5" opacity="0.6"/>
+    <line x1="75" y1="120" x2="100" y2="135" stroke="#FCD535" stroke-width="1" opacity="0.4"/>
+    <line x1="125" y1="120" x2="100" y2="135" stroke="#FCD535" stroke-width="1" opacity="0.4"/>
+  </g>
+  
+  <!-- 底部文字 PS (PumpStrategy 缩写) -->
+  <text x="100" y="175" 
+        font-family="Arial, sans-serif" 
+        font-size="24" 
+        font-weight="bold" 
+        fill="url(#pumpGradient)" 
+        text-anchor="middle">
+    PS
+  </text>
+</svg>

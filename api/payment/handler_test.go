@@ -2,6 +2,7 @@ package payment
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -223,7 +224,7 @@ func TestGetOrder(t *testing.T) {
 
 	// 先创建一个订单
 	service := payment.NewPaymentService(db)
-	order, err := service.CreatePaymentOrder(router.(*gin.Context).Request.Context(), "user1", "pkg1")
+	order, err := service.CreatePaymentOrder(context.Background(), "user1", "pkg1")
 	require.NoError(t, err)
 
 	t.Run("Get Existing Order", func(t *testing.T) {
@@ -288,7 +289,7 @@ func TestGetUserOrders(t *testing.T) {
 	// 创建多个订单
 	service := payment.NewPaymentService(db)
 	for i := 0; i < 3; i++ {
-		_, err := service.CreatePaymentOrder(router.(*gin.Context).Request.Context(), "user1", "pkg1")
+		_, err := service.CreatePaymentOrder(context.Background(), "user1", "pkg1")
 		require.NoError(t, err)
 	}
 
@@ -356,7 +357,7 @@ func TestHandleWebhook(t *testing.T) {
 
 	// 创建测试订单
 	service := payment.NewPaymentService(db)
-	order, err := service.CreatePaymentOrder(router.(*gin.Context).Request.Context(), "user1", "pkg1")
+	order, err := service.CreatePaymentOrder(context.Background(), "user1", "pkg1")
 	require.NoError(t, err)
 
 	// 更新订单关联Crossmint ID

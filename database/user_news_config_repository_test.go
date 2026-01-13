@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"testing"
-	"time"
+	// "time" // Unused import removed
 )
 
 func TestUserNewsConfigRepository_CreateAndGet(t *testing.T) {

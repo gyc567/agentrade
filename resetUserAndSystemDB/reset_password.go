@@ -1,3 +1,6 @@
+//go:build resetpwd
+// +build resetpwd
+
 package main
 
 import (

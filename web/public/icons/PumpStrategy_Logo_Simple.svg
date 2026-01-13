@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="pumpGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F0B90B"/>
+      <stop offset="100%" style="stop-color:#FCD535"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 简约背景 -->
+  <circle cx="24" cy="24" r="22" fill="#0B0E11" stroke="url(#pumpGrad)" stroke-width="1.5"/>
+  
+  <!-- 上升箭头 - 简化版 -->
+  <path d="M24 8 L36 22 L30 22 L30 38 L18 38 L18 22 L12 22 Z" 
+        fill="url(#pumpGrad)"/>
+  
+  <!-- 中心点 - AI 核心 -->
+  <circle cx="24" cy="26" r="4" fill="#0B0E11" stroke="#FCD535" stroke-width="1.5"/>
+</svg>

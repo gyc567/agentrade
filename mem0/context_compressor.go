@@ -324,7 +324,15 @@ func (cc *ContextCompressor) GetMetrics() CompressionMetrics {
 	cc.metrics.mu.RLock()
 	defer cc.metrics.mu.RUnlock()
 
-	return *cc.metrics
+	// 返回不包含锁的副本
+	return CompressionMetrics{
+		CompressionRuns:     cc.metrics.CompressionRuns,
+		AvgInputTokens:      cc.metrics.AvgInputTokens,
+		AvgOutputTokens:     cc.metrics.AvgOutputTokens,
+		AvgCompressionRatio: cc.metrics.AvgCompressionRatio,
+		TotalRemoved:        cc.metrics.TotalRemoved,
+		LastCompressionAt:   cc.metrics.LastCompressionAt,
+	}
 }
 
 // idPrefix 安全地获取ID前缀(最多8个字符)

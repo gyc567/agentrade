@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -70,8 +71,8 @@ func TestStructuredLogger_LogWithError(t *testing.T) {
 	tmpDir := t.TempDir()
 	logger, _ := NewStructuredLogger(tmpDir)
 
-	testError := "配置已存在"
-	err := logger.LogCreate("test-user", nil, 10*time.Millisecond, &testError)
+	testError := fmt.Errorf("配置已存在")
+	err := logger.LogCreate("test-user", nil, 10*time.Millisecond, testError)
 	if err != nil {
 		t.Errorf("日志记录失败: %v", err)
 	}

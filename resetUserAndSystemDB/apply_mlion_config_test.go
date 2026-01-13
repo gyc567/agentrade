@@ -1,3 +1,6 @@
+//go:build mlion
+// +build mlion
+
 package main
 
 import (
