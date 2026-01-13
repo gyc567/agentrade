@@ -177,7 +177,15 @@ func (vm *VersionManager) GetMetrics() VersionMetrics {
 	vm.metrics.mu.RLock()
 	defer vm.metrics.mu.RUnlock()
 
-	return *vm.metrics
+	// 返回不包含锁的副本
+	return VersionMetrics{
+		MigrationsRun:   vm.metrics.MigrationsRun,
+		SuccessCount:    vm.metrics.SuccessCount,
+		FailureCount:    vm.metrics.FailureCount,
+		LastMigrationAt: vm.metrics.LastMigrationAt,
+		AverageDuration: vm.metrics.AverageDuration,
+		TotalDuration:   vm.metrics.TotalDuration,
+	}
 }
 
 // PrintStats 打印统计信息

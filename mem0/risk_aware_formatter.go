@@ -307,7 +307,15 @@ func (raf *RiskAwareFormatter) GetMetrics() RiskMetrics {
 	raf.metrics.mu.RLock()
 	defer raf.metrics.mu.RUnlock()
 
-	return *raf.metrics
+	// 返回不包含锁的副本
+	return RiskMetrics{
+		FilterRuns:     raf.metrics.FilterRuns,
+		FilteredOut:    raf.metrics.FilteredOut,
+		KeptCount:      raf.metrics.KeptCount,
+		RiskViolations: raf.metrics.RiskViolations,
+		AvgFilterRate:  raf.metrics.AvgFilterRate,
+		LastFilterAt:   raf.metrics.LastFilterAt,
+	}
 }
 
 // PrintStats 打印统计信息

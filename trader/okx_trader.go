@@ -593,7 +593,7 @@ func (t *OKXTrader) placeOrder(order map[string]string) (map[string]interface{},
                                         errMsg := fmt.Sprintf("INSUFFICIENT_MARGIN: 保证金不足，无法下单。可用保证金: %.2f USDT, 所需保证金: %.2f USDT (交易对: %s, 数量: %s, 价格: %.2f, 名义价值: %.2f USDT)。请减少下单数量或增加账户资金。",
                                                 availableMargin, requiredMarginWithBuffer, instId, szStr, price, notionalValue)
                                         log.Printf("❌ %s", errMsg)
-                                        return nil, fmt.Errorf(errMsg)
+                                        return nil, fmt.Errorf("%s", errMsg)
                                 }
 
                                 log.Printf("✅ 保证金充足，继续下单...")

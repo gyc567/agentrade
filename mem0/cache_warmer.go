@@ -274,10 +274,13 @@ func (w *CacheWarmer) GetMetrics() CacheMetrics {
 	w.metrics.mu.RLock()
 	defer w.metrics.mu.RUnlock()
 
-	metrics := *w.metrics
-	metrics.Evictions = int64(1000 - w.cache.Len()) // LRU大小减去当前项数
-
-	return metrics
+	// 返回不包含锁的副本
+	return CacheMetrics{
+		Hits:         w.metrics.Hits,
+		Misses:       w.metrics.Misses,
+		Evictions:    int64(1000 - w.cache.Len()), // LRU大小减去当前项数
+		LastUpdateAt: w.metrics.LastUpdateAt,
+	}
 }
 
 // GetHitRate 获取命中率

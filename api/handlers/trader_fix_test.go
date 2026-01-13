@@ -3,11 +3,11 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
+	// "net/http" // Unused import removed
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	// "github.com/stretchr/testify/assert" // Unused import removed
 	"github.com/stretchr/testify/require"
 )
 

@@ -577,7 +577,14 @@ func (gfd *GetFullDecisionV2) GetMetrics() DecisionMetrics {
 	gfd.metrics.mu.RLock()
 	defer gfd.metrics.mu.RUnlock()
 
-	return *gfd.metrics
+	// 返回不包含锁的副本
+	return DecisionMetrics{
+		DecisionsGenerated: gfd.metrics.DecisionsGenerated,
+		MemoriesUsed:       gfd.metrics.MemoriesUsed,
+		CompressionsRun:    gfd.metrics.CompressionsRun,
+		FallbacksUsed:      gfd.metrics.FallbacksUsed,
+		AveragePrepTime:    gfd.metrics.AveragePrepTime,
+	}
 }
 
 // ===== Helper Functions =====

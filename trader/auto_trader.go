@@ -831,23 +831,23 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *decision.Decision, act
                 // 计算最大可开仓价值 = 可用保证金 * 80% * 杠杆
                 // 保留20%作为安全边际，防止价格波动导致保证金不足
                 maxMarginToUse := availableBalance * 0.80
-                maxPositionValue := maxMarginToUse * float64(decision.Leverage)
+                maxPositionValue := maxMarginToUse * decision.Leverage
 
                 if decision.PositionSizeUSD > maxPositionValue {
-                        log.Printf("  ⚠️ 保证金检查: AI请求开仓 $%.2f，但可用保证金 $%.2f (80%% = $%.2f)，杠杆 %dx，最大可开仓 $%.2f",
+                        log.Printf("  ⚠️ 保证金检查: AI请求开仓 $%.2f，但可用保证金 $%.2f (80%% = $%.2f)，杠杆 %.0fx，最大可开仓 $%.2f",
                                 decision.PositionSizeUSD, availableBalance, maxMarginToUse, decision.Leverage, maxPositionValue)
 
                         if maxPositionValue < 10 {
                                 // 如果最大可开仓金额太小（<$10），拒绝开仓
-                                return fmt.Errorf("保证金不足: 可用 $%.2f, 需要至少 $%.2f 保证金才能开仓 (杠杆 %dx)",
-                                        availableBalance, decision.PositionSizeUSD/float64(decision.Leverage)/0.8, decision.Leverage)
+                                return fmt.Errorf("保证金不足: 可用 $%.2f, 需要至少 $%.2f 保证金才能开仓 (杠杆 %.0fx)",
+                                        availableBalance, decision.PositionSizeUSD/decision.Leverage/0.8, decision.Leverage)
                         }
 
                         // 自动调整到最大可开仓值
                         adjustedPositionSizeUSD = maxPositionValue
                         log.Printf("  ✅ 自动调整开仓金额: $%.2f -> $%.2f (可用保证金的80%%)", decision.PositionSizeUSD, adjustedPositionSizeUSD)
                 } else {
-                        log.Printf("  ✅ 保证金检查通过: 开仓 $%.2f, 可用保证金 $%.2f, 杠杆 %dx",
+                        log.Printf("  ✅ 保证金检查通过: 开仓 $%.2f, 可用保证金 $%.2f, 杠杆 %.0fx",
                                 decision.PositionSizeUSD, availableBalance, decision.Leverage)
                 }
         } else {
@@ -932,23 +932,23 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *decision.Decision, ac
                 // 计算最大可开仓价值 = 可用保证金 * 80% * 杠杆
                 // 保留20%作为安全边际，防止价格波动导致保证金不足
                 maxMarginToUse := availableBalance * 0.80
-                maxPositionValue := maxMarginToUse * float64(decision.Leverage)
+                maxPositionValue := maxMarginToUse * decision.Leverage
 
                 if decision.PositionSizeUSD > maxPositionValue {
-                        log.Printf("  ⚠️ 保证金检查: AI请求开仓 $%.2f，但可用保证金 $%.2f (80%% = $%.2f)，杠杆 %dx，最大可开仓 $%.2f",
+                        log.Printf("  ⚠️ 保证金检查: AI请求开仓 $%.2f，但可用保证金 $%.2f (80%% = $%.2f)，杠杆 %.0fx，最大可开仓 $%.2f",
                                 decision.PositionSizeUSD, availableBalance, maxMarginToUse, decision.Leverage, maxPositionValue)
 
                         if maxPositionValue < 10 {
                                 // 如果最大可开仓金额太小（<$10），拒绝开仓
-                                return fmt.Errorf("保证金不足: 可用 $%.2f, 需要至少 $%.2f 保证金才能开仓 (杠杆 %dx)",
-                                        availableBalance, decision.PositionSizeUSD/float64(decision.Leverage)/0.8, decision.Leverage)
+                                return fmt.Errorf("保证金不足: 可用 $%.2f, 需要至少 $%.2f 保证金才能开仓 (杠杆 %.0fx)",
+                                        availableBalance, decision.PositionSizeUSD/decision.Leverage/0.8, decision.Leverage)
                         }
 
                         // 自动调整到最大可开仓值
                         adjustedPositionSizeUSD = maxPositionValue
                         log.Printf("  ✅ 自动调整开仓金额: $%.2f -> $%.2f (可用保证金的80%%)", decision.PositionSizeUSD, adjustedPositionSizeUSD)
                 } else {
-                        log.Printf("  ✅ 保证金检查通过: 开仓 $%.2f, 可用保证金 $%.2f, 杠杆 %dx",
+                        log.Printf("  ✅ 保证金检查通过: 开仓 $%.2f, 可用保证金 $%.2f, 杠杆 %.0fx",
                                 decision.PositionSizeUSD, availableBalance, decision.Leverage)
                 }
         } else {

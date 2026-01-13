@@ -225,7 +225,13 @@ func (cb *CircuitBreaker) SetOnStateChange(fn func(oldState, newState CircuitSta
 func (cb *CircuitBreaker) GetMetrics() CircuitBreakerMetrics {
 	cb.metrics.mu.RLock()
 	defer cb.metrics.mu.RUnlock()
-	return *cb.metrics
+	
+	// 返回不包含锁的副本
+	return CircuitBreakerMetrics{
+		StateChanges: cb.metrics.StateChanges,
+		TotalTrips:   cb.metrics.TotalTrips,
+		LastTripTime: cb.metrics.LastTripTime,
+	}
 }
 
 // PrintStats 打印统计信息

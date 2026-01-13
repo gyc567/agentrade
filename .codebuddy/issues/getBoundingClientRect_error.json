@@ -1,0 +1,75 @@
+{
+  "issue_id": "FRONTEND-001",
+  "title": "getBoundingClientRect Error on /traders Page (Vercel Production)",
+  "status": "analyzed",
+  "created_at": "2026-01-11",
+  "environment": "Vercel Production (web-pink-omega-40.vercel.app)",
+  
+  "error_details": {
+    "message": "Uncaught TypeError: Cannot read properties of null (reading 'getBoundingClientRect')",
+    "url": "https://web-pink-omega-40.vercel.app/traders",
+    "type": "Window Error"
+  },
+  
+  "reproduction_path": {
+    "steps": [
+      "1. 访问 https://web-pink-omega-40.vercel.app/traders",
+      "2. 等待页面加载完成",
+      "3. 错误可能在以下场景触发：",
+      "   - 图表组件 (ComparisonChart/EquityChart) 渲染时",
+      "   - Tooltip 组件计算位置时",
+      "   - 页面快速切换导致组件未完全卸载"
+    ],
+    "affected_components": [
+      "ComparisonChart.tsx - 使用 Recharts ResponsiveContainer",
+      "EquityChart.tsx - 使用 Recharts ResponsiveContainer", 
+      "AITradersPage.tsx - 主页面组件"
+    ]
+  },
+  
+  "root_cause_analysis": {
+    "primary_cause": "Recharts 图表库在组件挂载/卸载时的竞态条件",
+    "details": [
+      "Recharts 的 ResponsiveContainer 组件内部使用 getBoundingClientRect 计算容器尺寸",
+      "当组件在 DOM 完全挂载前或卸载过程中被访问时，ref 可能为 null",
+      "生产环境的代码压缩和异步加载可能加剧这个问题"
+    ],
+    "evidence": {
+      "recharts_usage": [
+        "ComparisonChart.tsx:253 - <ResponsiveContainer width=\"100%\" height={520}>",
+        "EquityChart.tsx:290 - <ResponsiveContainer width='100%' height={280}>"
+      ],
+      "no_direct_usage": "项目源码中未直接调用 getBoundingClientRect，确认来自第三方库"
+    }
+  },
+  
+  "solution": {
+    "status": "pending_implementation",
+    "approach": "添加条件渲染和错误边界",
+    "code_changes": [
+      {
+        "file": "web/src/components/ComparisonChart.tsx",
+        "change": "在 ResponsiveContainer 外层添加 mounted 状态检查",
+        "example": "const [mounted, setMounted] = useState(false); useEffect(() => { setMounted(true); return () => setMounted(false); }, []); if (!mounted) return null;"
+      },
+      {
+        "file": "web/src/components/EquityChart.tsx", 
+        "change": "同上，添加 mounted 状态检查"
+      },
+      {
+        "file": "web/src/App.tsx",
+        "change": "可选：添加 ErrorBoundary 组件包裹图表"
+      }
+    ]
+  },
+  
+  "workaround": {
+    "description": "本地开发环境无法复现，仅在 Vercel 生产环境出现",
+    "temporary_fix": "刷新页面通常可以解决"
+  },
+  
+  "references": [
+    "https://github.com/recharts/recharts/issues/1767",
+    "https://github.com/recharts/recharts/issues/2830"
+  ]
+}

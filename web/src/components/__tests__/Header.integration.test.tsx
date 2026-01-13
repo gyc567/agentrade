@@ -67,9 +67,9 @@ describe('Header Integration Tests', () => {
     it('should render logo image', () => {
       render(<Header />);
 
-      const logoImg = screen.getByAltText('Monnaire Logo');
+      const logoImg = screen.getByAltText('PumpStrategy Logo');
       expect(logoImg).toBeInTheDocument();
-      expect(logoImg).toHaveAttribute('src', '/icons/Monnaire_Logo.svg');
+      expect(logoImg).toHaveAttribute('src', '/icons/PumpStrategy_Logo_Simple.svg');
     });
 
     it('should render app title', () => {
@@ -282,7 +282,7 @@ describe('Header Integration Tests', () => {
     it('should render CreditsDisplay without affecting logo', () => {
       render(<Header />);
 
-      const logo = screen.getByAltText('Monnaire Logo');
+      const logo = screen.getByAltText('PumpStrategy Logo');
       const creditsDisplay = screen.getByTestId('credits-display');
 
       expect(logo).toBeInTheDocument();
