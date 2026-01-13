@@ -139,7 +139,7 @@ export const useNetworkStatus = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const response = await fetch('https://nofx-gyc567.replit.app/api/health', {
+        const response = await fetch('/api/health', {
           method: 'GET',
           signal: controller.signal,
         });
