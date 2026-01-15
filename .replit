@@ -47,6 +47,6 @@ localPort = 9999
 externalPort = 3001
 
 [deployment]
-deploymentTarget = "autoscale"
-run = ["bash", "-c", "PORT=5000 ./nofx-backend"]
-build = ["go", "build", "-o", "nofx-backend", "."]
+deploymentTarget = "vm"
+run = ["bash", "-c", "./nofx-backend & cd web && npm run preview -- --port 5000 --host 0.0.0.0"]
+build = ["bash", "-c", "go build -o nofx-backend . && cd web && npm run build"]
