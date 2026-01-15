@@ -444,45 +444,76 @@ func (d *Database) executeQueries(queries []string) error {
 	return nil
 }
 
-// 为现有数据库添加新字段（向后兼容）
-func (d *Database) alterTables() error {
-	alterQueries := []string{
-		// 添加users表缺失的字段
-		`ALTER TABLE users ADD COLUMN locked_until TIMESTAMP`,
-		`ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0`,
-		`ALTER TABLE users ADD COLUMN last_failed_at TIMESTAMP`,
-		`ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1`,
-		`ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0`,
-		`ALTER TABLE users ADD COLUMN beta_code TEXT`,
-		// 添加exchanges表字段
-		`ALTER TABLE exchanges ADD COLUMN hyperliquid_wallet_addr TEXT DEFAULT ''`,
-		`ALTER TABLE exchanges ADD COLUMN aster_user TEXT DEFAULT ''`,
-		`ALTER TABLE exchanges ADD COLUMN aster_signer TEXT DEFAULT ''`,
-		`ALTER TABLE exchanges ADD COLUMN aster_private_key TEXT DEFAULT ''`,
-		`ALTER TABLE exchanges ADD COLUMN okx_passphrase TEXT DEFAULT ''`,
-		// 添加traders表字段
-		`ALTER TABLE traders ADD COLUMN custom_prompt TEXT DEFAULT ''`,
-		`ALTER TABLE traders ADD COLUMN override_base_prompt BOOLEAN DEFAULT 0`,
-		`ALTER TABLE traders ADD COLUMN is_cross_margin BOOLEAN DEFAULT 1`,             // 默认为全仓模式
-		`ALTER TABLE traders ADD COLUMN use_default_coins BOOLEAN DEFAULT 1`,           // 默认使用默认币种
-		`ALTER TABLE traders ADD COLUMN custom_coins TEXT DEFAULT ''`,                  // 自定义币种列表（JSON格式）
-		`ALTER TABLE traders ADD COLUMN btc_eth_leverage INTEGER DEFAULT 5`,            // BTC/ETH杠杆倍数
-		`ALTER TABLE traders ADD COLUMN altcoin_leverage INTEGER DEFAULT 5`,            // 山寨币杠杆倍数
-		`ALTER TABLE traders ADD COLUMN trading_symbols TEXT DEFAULT ''`,               // 交易币种，逗号分隔
-		`ALTER TABLE traders ADD COLUMN use_coin_pool BOOLEAN DEFAULT 0`,               // 是否使用COIN POOL信号源
-		`ALTER TABLE traders ADD COLUMN use_oi_top BOOLEAN DEFAULT 0`,                  // 是否使用OI TOP信号源
-		`ALTER TABLE traders ADD COLUMN system_prompt_template TEXT DEFAULT 'default'`, // 系统提示词模板名称
-		// 添加ai_models表字段
-		`ALTER TABLE ai_models ADD COLUMN custom_api_url TEXT DEFAULT ''`,    // 自定义API地址
-		`ALTER TABLE ai_models ADD COLUMN custom_model_name TEXT DEFAULT ''`, // 自定义模型名称
+// checkColumnExists 检查表中是否存在指定的列
+func (d *Database) checkColumnExists(tableName, columnName string) bool {
+	var exists bool
+	err := d.db.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns
+			WHERE table_schema = 'public'
+			AND table_name = $1
+			AND column_name = $2
+		)
+	`, tableName, columnName).Scan(&exists)
+	if err != nil {
+		log.Printf("⚠️ 检查列存在性失败 [%s.%s]: %v", tableName, columnName, err)
+		return true // 如果检查失败，假设列存在以避免错误
+	}
+	return exists
+}
 
-		// 为新的交易记录表创建索引
+// 为现有数据库添加新字段（向后兼容）
+// 注意: 现在大多数列已经在database/migration.sql中定义，此函数主要用于
+// 处理来自旧schema的数据库或添加未来的新列
+func (d *Database) alterTables() error {
+	// 定义需要添加的列：(表名, 列名, SQL语句)
+	columnsToAdd := []struct {
+		table string
+		col   string
+		sql   string
+	}{
+		// 添加users表缺失的字段（这些在migration.sql中已定义，但保留向后兼容）
+		{"users", "locked_until", `ALTER TABLE users ADD COLUMN locked_until TIMESTAMP`},
+		{"users", "failed_attempts", `ALTER TABLE users ADD COLUMN failed_attempts INTEGER DEFAULT 0`},
+		{"users", "last_failed_at", `ALTER TABLE users ADD COLUMN last_failed_at TIMESTAMP`},
+		{"users", "is_active", `ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1`},
+		{"users", "is_admin", `ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0`},
+		{"users", "beta_code", `ALTER TABLE users ADD COLUMN beta_code TEXT`},
+
+		// 添加exchanges表字段
+		{"exchanges", "hyperliquid_wallet_addr", `ALTER TABLE exchanges ADD COLUMN hyperliquid_wallet_addr TEXT DEFAULT ''`},
+		{"exchanges", "aster_user", `ALTER TABLE exchanges ADD COLUMN aster_user TEXT DEFAULT ''`},
+		{"exchanges", "aster_signer", `ALTER TABLE exchanges ADD COLUMN aster_signer TEXT DEFAULT ''`},
+		{"exchanges", "aster_private_key", `ALTER TABLE exchanges ADD COLUMN aster_private_key TEXT DEFAULT ''`},
+		{"exchanges", "okx_passphrase", `ALTER TABLE exchanges ADD COLUMN okx_passphrase TEXT DEFAULT ''`},
+
+		// 添加ai_models表字段（这些在migration.sql中已定义）
+		{"ai_models", "custom_api_url", `ALTER TABLE ai_models ADD COLUMN custom_api_url TEXT DEFAULT ''`},
+		{"ai_models", "custom_model_name", `ALTER TABLE ai_models ADD COLUMN custom_model_name TEXT DEFAULT ''`},
+
+		// 注意: traders表的大部分列已在migration.sql中定义:
+		// custom_prompt, override_base_prompt, is_cross_margin,
+		// system_prompt_template, btc_eth_leverage, altcoin_leverage,
+		// use_coin_pool, use_oi_top, trading_symbols
+		// 这些已由migration.sql处理，不再在此重复添加
+	}
+
+	// 只在列不存在时才尝试添加
+	for _, col := range columnsToAdd {
+		if !d.checkColumnExists(col.table, col.col) {
+			log.Printf("📝 添加缺失的列: %s.%s", col.table, col.col)
+			d.exec(col.sql)
+		}
+	}
+
+	// 为新的交易记录表创建索引（如果表存在）
+	indexQueries := []string{
 		`CREATE INDEX IF NOT EXISTS idx_trade_records_trader_time ON trade_records(trader_id, created_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_trade_records_symbol ON trade_records(symbol)`,
 	}
 
-	for _, query := range alterQueries {
-		// 忽略已存在字段的错误
+	for _, query := range indexQueries {
+		// 忽略表不存在等错误
 		d.exec(query)
 	}
 
